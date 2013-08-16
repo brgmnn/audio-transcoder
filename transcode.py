@@ -4,28 +4,35 @@ import multiprocessing as mp, os, shutil, subprocess, sys, time, argparse, cPick
 from sets import Set
 
 class Library:
+	libs = dict()
+
 	def __init__(self, name, source, target):
 		self.name = name
 		self.source = source
 		self.target = target
 
+		if name not in Library.libs:
+			Library.libs[name] = self
+		else:
+			sys.stderr.write("Could not add new library as another library of the same name already exists!")
+
 	def __str__(self):
 		return self.name+": '"+self.source+"' -> '"+self.target+"'"
 
+	# open a libraries file
 	@staticmethod
 	def open_libraries():
-		libraries = []
 		try:
-			libraries = pickle.load(open("libraries.p", "rb"))
+			Library.libs = pickle.load(open("libraries.p", "rb"))
 		except IOError:
 			print "Failed to open libraries file. Attempting to create a new file..."
-			Library.save_sources(libraries)
-		return libraries
+			Library.save_libraries()
+		return Library.libs
 
 	@staticmethod
-	def save_sources(libraries):
+	def save_libraries():
 		try:
-			pickle.dump(libraries, open("libraries.p", "wb"))
+			pickle.dump(Library.libs, open("libraries.p", "wb"))
 		except IOError:
 			print "Failed to save libraries!"
 
@@ -158,34 +165,54 @@ class AudioTranscoder:
 # ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 if __name__ == "__main__":
 	ap = argparse.ArgumentParser(description="Batch transcoding of audio files")
-	ap.add_argument("-ls", "--list-libraries",
+	
+	ap.add_argument("--list-libraries", "-ll",
 		action="store_true",
 		help="Lists the library directories that are scanned for audio files.")
-	ap.add_argument("--add-library",
+	ap.add_argument("--add-library", "-al",
 		nargs=3,
 		type=str,
 		dest="add_library",
 		metavar=("NAME", "SOURCE", "DESTINATION"),
 		help="Add a library directory to the libraries list.")
-	ap.add_argument("--add-path")
+	ap.add_argument("--remove-library", "-rl",
+		nargs=1,
+		type=str,
+		dest="remove_library",
+		metavar="NAME",
+		help="Removes a library given the library name. This will delete the library and its associated paths.")
+
+	ap.add_argument("--add-path",
+		nargs=2,
+		type=str,
+		dest="add_path",
+		metavar=("LIBRARY", "PATH"),
+		help="Adds the path PATH to the library named LIBRARY. Fails if the path given is not inside the libraries target path.")
 
 	args = ap.parse_args()
 
 	# list the available libraries
 	if args.list_libraries:
 		print "Libraries:"
-
-		libraries = Library.open_libraries()
-
-		for library in libraries:
-			print library
+		libs = Library.open_libraries()
+		for name, library in libs.iteritems():
+			print "  ",library
 
 	# add a library
 	elif args.add_library:
-		libraries = Library.open_libraries()
-		libraries.append(Library(args.add_library[0], args.add_library[1], args.add_library[2]))
-		libraries.sort()
-		Library.save_sources(libraries)
+		Library.open_libraries()
+		Library(args.add_library[0], args.add_library[1], args.add_library[2])
+		Library.save_libraries()
+
+	# remove library
+	elif args.remove_library:
+		Library.open_libraries()
+
+	# add a path to a library
+	elif args.add_path:
+		libs = Library.open_libraries()
+		prefix = os.path.commonprefix(["/home/daniel", "/home"])
+		print prefix
 
 	# transcode anything that's missing
 	else:
