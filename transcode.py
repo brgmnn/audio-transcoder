@@ -8,8 +8,9 @@ class Library:
 
 	def __init__(self, name, source, target):
 		self.name = name
-		self.source = source
-		self.target = target
+		self.source = os.path.abspath(source)
+		self.target = os.path.abspath(target)
+		self.paths = []
 
 		if name not in Library.libs:
 			Library.libs[name] = self
@@ -17,7 +18,24 @@ class Library:
 			sys.stderr.write("Could not add new library as another library of the same name already exists!")
 
 	def __str__(self):
-		return self.name+": '"+self.source+"' -> '"+self.target+"'"
+		return self.name+" ["+str(len(self.paths))+" paths]: '"+self.source+"' -> '"+self.target+"'"
+
+	# adds a path to the library
+	def add_path(self, path):
+		path = os.path.abspath(path)
+
+		if os.path.commonprefix([self.source, path]) != self.source:
+			return 1
+
+		# prefix = os.path.commonprefix([libs[name].source, path])
+		relpath = os.path.relpath(path, libs[name].source)
+		print relpath
+		print os.path.join(libs[name].source, relpath)
+
+		libs[name].paths.append(relpath)
+		libs[name].paths.sort()
+
+		return 0
 
 	# open a libraries file
 	@staticmethod
@@ -29,6 +47,7 @@ class Library:
 			Library.save_libraries()
 		return Library.libs
 
+	# saves libraries to disk
 	@staticmethod
 	def save_libraries():
 		try:
@@ -204,11 +223,11 @@ if __name__ == "__main__":
 		Library(args.add_library[0], args.add_library[1], args.add_library[2])
 		Library.save_libraries()
 
-	# remove library
+	# remove a library
 	elif args.remove_library:
 		name = args.remove_library[0]
 		libs = Library.open_libraries()
-		
+
 		if name in libs:
 			del libs[name]
 			Library.save_libraries()
@@ -216,8 +235,14 @@ if __name__ == "__main__":
 	# add a path to a library
 	elif args.add_path:
 		libs = Library.open_libraries()
-		prefix = os.path.commonprefix(["/home/daniel", "/home"])
-		print prefix
+		name, path = args.add_path
+		
+		if name not in libs:
+			sys.exit()
+
+		libs[name].add_path(path)
+		Library.save_libraries()
+
 
 	# transcode anything that's missing
 	else:
