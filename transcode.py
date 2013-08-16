@@ -24,7 +24,11 @@ class Library:
 	def add_path(self, path):
 		path = os.path.abspath(path)
 
-		if os.path.commonprefix([self.source, path]) != self.source:
+		# if os.path.commonprefix([self.source, path]) != self.source:
+		if not path.startswith(self.source):
+			print "paths dont match"
+			print self.source
+			print path
 			return 1
 
 		# prefix = os.path.commonprefix([libs[name].source, path])
@@ -34,6 +38,18 @@ class Library:
 
 		libs[name].paths.append(relpath)
 		libs[name].paths.sort()
+		return 0
+
+	# remove a path from the library
+	def remove_path(self, path):
+		path = os.path.abspath(path)
+
+		if not path.startswith(self.source):
+			return 1
+
+		relpath = os.path.relpath(path, libs[name].source)
+
+		self.paths = [p for p in self.paths if p != relpath]
 		return 0
 
 	# list the paths associated with this library
@@ -191,9 +207,7 @@ class AudioTranscoder:
 if __name__ == "__main__":
 	ap = argparse.ArgumentParser(description="Batch transcoding of audio files")
 	
-	ap.add_argument("--list-libraries", "-ll",
-		action="store_true",
-		help="Lists the library directories that are scanned for audio files.")
+	
 	ap.add_argument("--add-library", "-al",
 		nargs=3,
 		type=str,
@@ -205,13 +219,22 @@ if __name__ == "__main__":
 		dest="remove_library",
 		metavar="NAME",
 		help="Removes a library given the library name. This will delete the library and its associated paths.")
+	ap.add_argument("--list-libraries", "-ll",
+		action="store_true",
+		help="Lists the library directories that are scanned for audio files.")
 
 	ap.add_argument("--add-path", "-ap",
 		nargs=2,
 		type=str,
 		dest="add_path",
 		metavar=("LIBRARY", "PATH"),
-		help="Adds the path PATH to the library named LIBRARY. Fails if the path given is not inside the libraries target path.")
+		help="Adds a path to a library. Fails if the path given is not inside the libraries target path.")
+	ap.add_argument("--remove-path", "-rp",
+		nargs=2,
+		type=str,
+		dest="remove_path",
+		metavar=("LIBRARY", "PATH"),
+		help="Remove a path from a library. Fails if the path does not exist in the library or if the library does not exist.")
 	ap.add_argument("--list-paths", "-lp",
 		type=str,
 		dest="list_paths",
@@ -220,15 +243,8 @@ if __name__ == "__main__":
 
 	args = ap.parse_args()
 
-	# list the available libraries
-	if args.list_libraries:
-		print "Libraries:"
-		libs = Library.open_libraries()
-		for name, library in libs.iteritems():
-			print "  ",library
-
 	# add a library
-	elif args.add_library:
+	if args.add_library:
 		Library.open_libraries()
 		Library(args.add_library[0], args.add_library[1], args.add_library[2])
 		Library.save_libraries()
@@ -242,6 +258,13 @@ if __name__ == "__main__":
 			del libs[name]
 			Library.save_libraries()
 
+	# list the available libraries
+	elif args.list_libraries:
+		print "Libraries:"
+		libs = Library.open_libraries()
+		for name, library in libs.iteritems():
+			print "  ",library
+
 	# add a path to a library
 	elif args.add_path:
 		libs = Library.open_libraries()
@@ -251,6 +274,17 @@ if __name__ == "__main__":
 			sys.exit()
 
 		libs[name].add_path(path)
+		Library.save_libraries()
+
+	# remove a path from a library
+	elif args.remove_path:
+		libs = Library.open_libraries()
+		name, path = args.remove_path
+
+		if name not in libs:
+			sys.exit()
+
+		libs[name].remove_path(path)
 		Library.save_libraries()
 
 	# list paths for a library
