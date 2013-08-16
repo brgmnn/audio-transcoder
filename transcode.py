@@ -3,32 +3,31 @@
 import multiprocessing as mp, os, shutil, subprocess, sys, time, argparse, cPickle as pickle
 from sets import Set
 
-class Source:
-	base_dir = ""
-	target_dir = ""
-
-	def __init__(self, base, target):
-		self.base_dir = base
-		self.target_dir = target
+class Library:
+	def __init__(self, name, source, target):
+		self.name = name
+		self.source = source
+		self.target = target
 
 	def __str__(self):
-		return self.base_dir+" -> "+self.target_dir
+		return self.name+": '"+self.source+"' -> '"+self.target+"'"
 
 	@staticmethod
-	def open_sources():
-		sources = []
+	def open_libraries():
+		libraries = []
 		try:
-			sources = pickle.load(open("sources.p", "rb"))
+			libraries = pickle.load(open("libraries.p", "rb"))
 		except IOError:
-			pickle.dump(sources, open("sources.p", "wb"))
-		return sources
+			print "Failed to open libraries file. Attempting to create a new file..."
+			Library.save_sources(libraries)
+		return libraries
 
 	@staticmethod
-	def save_sources(sources):
+	def save_sources(libraries):
 		try:
-			pickle.dump(sources, open("sources.p", "wb"))
+			pickle.dump(libraries, open("libraries.p", "wb"))
 		except IOError:
-			print "Failed to save sources!"
+			print "Failed to save libraries!"
 
 
 def transcode(src, dst, quality):
@@ -159,32 +158,34 @@ class AudioTranscoder:
 # ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 if __name__ == "__main__":
 	ap = argparse.ArgumentParser(description="Batch transcoding of audio files")
-	ap.add_argument("-ls", "--list-sources",
+	ap.add_argument("-ls", "--list-libraries",
 		action="store_true",
-		help="Lists the source directories that are scanned for audio files.")
-	ap.add_argument("--add-source",
-		nargs=2,
+		help="Lists the library directories that are scanned for audio files.")
+	ap.add_argument("--add-library",
+		nargs=3,
 		type=str,
-		dest="add_source",
-		metavar=("SOURCE", "DESTINATION"),
-		help="Add a source directory to the sources list.")
+		dest="add_library",
+		metavar=("NAME", "SOURCE", "DESTINATION"),
+		help="Add a library directory to the libraries list.")
+	ap.add_argument("--add-path")
 
 	args = ap.parse_args()
 
-	# list the available sources
-	if args.list_sources:
-		print "Sources:"
+	# list the available libraries
+	if args.list_libraries:
+		print "Libraries:"
 
-		sources = Source.open_sources()
+		libraries = Library.open_libraries()
 
-		for source in sources:
-			print source
+		for library in libraries:
+			print library
 
-	elif args.add_source:
-		sources = Source.open_sources()
-		sources.append(Source(args.add_source[0], args.add_source[1]))
-		sources.sort()
-		Source.save_sources(sources)
+	# add a library
+	elif args.add_library:
+		libraries = Library.open_libraries()
+		libraries.append(Library(args.add_library[0], args.add_library[1], args.add_library[2]))
+		libraries.sort()
+		Library.save_sources(libraries)
 
 	# transcode anything that's missing
 	else:
