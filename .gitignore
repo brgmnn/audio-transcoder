@@ -36,3 +36,4 @@ nosetests.xml
 
 # User Settings files
 libraries.p
+*.paths
