@@ -206,7 +206,12 @@ if __name__ == "__main__":
 
 	# remove library
 	elif args.remove_library:
-		Library.open_libraries()
+		name = args.remove_library[0]
+		libs = Library.open_libraries()
+		
+		if name in libs:
+			del libs[name]
+			Library.save_libraries()
 
 	# add a path to a library
 	elif args.add_path:
