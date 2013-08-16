@@ -52,6 +52,17 @@ class Library:
 		self.paths = [p for p in self.paths if p != relpath]
 		return 0
 
+	def remove_path_prefix(self, prefix):
+		prefix = os.path.abspath(prefix)
+
+		if not prefix.startswith(self.source):
+			return 1
+
+		relprefix = os.path.relpath(prefix, libs[name].source)
+
+		self.paths = [p for p in self.paths if not p.startswith(relprefix)]
+		return 0
+
 	# list the paths associated with this library
 	def list_paths(self):
 		for path in self.paths:
@@ -234,7 +245,13 @@ if __name__ == "__main__":
 		type=str,
 		dest="remove_path",
 		metavar=("LIBRARY", "PATH"),
-		help="Remove a path from a library. Fails if the path does not exist in the library or if the library does not exist.")
+		help="Remove a path from a library. Does not remove sub-paths under this path. Fails if the path does not exist in the library or if the library does not exist.")
+	ap.add_argument("--remove-path-prefix", "-rpp",
+		nargs=2,
+		type=str,
+		dest="remove_path_prefix",
+		metavar=("LIBRARY", "PATH-PREFIX"),
+		help="Removes all paths under PATH-PREFIX from a library.")
 	ap.add_argument("--list-paths", "-lp",
 		type=str,
 		dest="list_paths",
@@ -285,6 +302,17 @@ if __name__ == "__main__":
 			sys.exit()
 
 		libs[name].remove_path(path)
+		Library.save_libraries()
+
+	# remove paths from a library
+	elif args.remove_path_prefix:
+		libs = Library.open_libraries()
+		name, prefix = args.remove_path_prefix
+
+		if name not in libs:
+			sys.exit()
+
+		libs[name].remove_path_prefix(prefix)
 		Library.save_libraries()
 
 	# list paths for a library
