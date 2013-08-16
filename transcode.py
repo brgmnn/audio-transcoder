@@ -66,9 +66,7 @@ class Library:
 	# list the paths associated with this library
 	def list_paths(self):
 		for path in self.paths:
-			print "  ",path
-
-		print len(self.paths),"total"
+			print path
 
 	# open a libraries file
 	@staticmethod
