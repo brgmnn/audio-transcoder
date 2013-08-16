@@ -34,8 +34,14 @@ class Library:
 
 		libs[name].paths.append(relpath)
 		libs[name].paths.sort()
-
 		return 0
+
+	# list the paths associated with this library
+	def list_paths(self):
+		for path in self.paths:
+			print "  ",path
+
+		print len(self.paths),"total"
 
 	# open a libraries file
 	@staticmethod
@@ -195,18 +201,22 @@ if __name__ == "__main__":
 		metavar=("NAME", "SOURCE", "DESTINATION"),
 		help="Add a library directory to the libraries list.")
 	ap.add_argument("--remove-library", "-rl",
-		nargs=1,
 		type=str,
 		dest="remove_library",
 		metavar="NAME",
 		help="Removes a library given the library name. This will delete the library and its associated paths.")
 
-	ap.add_argument("--add-path",
+	ap.add_argument("--add-path", "-ap",
 		nargs=2,
 		type=str,
 		dest="add_path",
 		metavar=("LIBRARY", "PATH"),
 		help="Adds the path PATH to the library named LIBRARY. Fails if the path given is not inside the libraries target path.")
+	ap.add_argument("--list-paths", "-lp",
+		type=str,
+		dest="list_paths",
+		metavar="LIBRARY",
+		help="Lists the paths being watched under a specified library.")
 
 	args = ap.parse_args()
 
@@ -225,7 +235,7 @@ if __name__ == "__main__":
 
 	# remove a library
 	elif args.remove_library:
-		name = args.remove_library[0]
+		name = args.remove_library
 		libs = Library.open_libraries()
 
 		if name in libs:
@@ -243,6 +253,13 @@ if __name__ == "__main__":
 		libs[name].add_path(path)
 		Library.save_libraries()
 
+	# list paths for a library
+	elif args.list_paths:
+		libs = Library.open_libraries()
+		if args.list_paths in libs:
+			libs[args.list_paths].list_paths()
+		else:
+			print "Could not find library",args.list_paths
 
 	# transcode anything that's missing
 	else:
