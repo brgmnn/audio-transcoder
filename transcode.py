@@ -22,7 +22,7 @@ class Library:
 
 	# adds a path to the library
 	def add_path(self, path):
-		path = os.path.abspath(path)
+		path = os.path.abspath(self.check_path(path))
 
 		# if os.path.commonprefix([self.source, path]) != self.source:
 		if not path.startswith(self.source):
@@ -31,10 +31,11 @@ class Library:
 			print path
 			return 1
 
+
 		# prefix = os.path.commonprefix([libs[name].source, path])
-		relpath = os.path.relpath(path, libs[name].source)
+		relpath = os.path.relpath(path, self.source)
 		print relpath
-		print os.path.join(libs[name].source, relpath)
+		print os.path.join(self.source, relpath)
 
 		libs[name].paths.append(relpath)
 		libs[name].paths.sort()
@@ -47,7 +48,7 @@ class Library:
 		if not path.startswith(self.source):
 			return 1
 
-		relpath = os.path.relpath(path, libs[name].source)
+		relpath = os.path.relpath(path, self.source)
 
 		self.paths = [p for p in self.paths if p != relpath]
 		return 0
@@ -58,7 +59,7 @@ class Library:
 		if not prefix.startswith(self.source):
 			return 1
 
-		relprefix = os.path.relpath(prefix, libs[name].source)
+		relprefix = os.path.relpath(prefix, self.source)
 
 		self.paths = [p for p in self.paths if not p.startswith(relprefix)]
 		return 0
@@ -70,7 +71,9 @@ class Library:
 
 	def check_path(self, path):
 		if path.startswith("~~/"):
-			return 
+			return os.path.join(self.source, path[3:])
+		else:
+			return path
 
 	# open a libraries file
 	@staticmethod
@@ -242,11 +245,11 @@ if __name__ == "__main__":
 		dest="add_path",
 		metavar=("LIBRARY", "PATH"),
 		help="Adds a path to a library. Fails if the path given is not inside the libraries target path.")
-	ap.add_argument("--add-paths", "-aps",
+	ap.add_argument("--import-paths", "-ip",
 		type=str,
-		dest="add_paths",
+		dest="import_paths",
 		metavar="LIBRARY",
-		help="Adds multiple paths to the specified library. Paths are read from the standard input stream with one path per line.")
+		help="Imports multiple paths to the specified library. Paths are read from the standard input stream with one path per line.")
 	ap.add_argument("--remove-path", "-rp",
 		nargs=2,
 		type=str,
@@ -301,9 +304,9 @@ if __name__ == "__main__":
 		Library.save_libraries()
 
 	# import multiple paths from stdin
-	elif args.add_paths:
+	elif args.import_paths:
 		libs = Library.open_libraries()
-		name = args.add_paths
+		name = args.import_paths
 
 		if name not in libs:
 			sys.exit()
