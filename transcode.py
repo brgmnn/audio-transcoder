@@ -68,6 +68,10 @@ class Library:
 		for path in self.paths:
 			print path
 
+	def check_path(self, path):
+		if path.startswith("~~/"):
+			return 
+
 	# open a libraries file
 	@staticmethod
 	def open_libraries():
@@ -238,6 +242,11 @@ if __name__ == "__main__":
 		dest="add_path",
 		metavar=("LIBRARY", "PATH"),
 		help="Adds a path to a library. Fails if the path given is not inside the libraries target path.")
+	ap.add_argument("--add-paths", "-aps",
+		type=str,
+		dest="add_paths",
+		metavar="LIBRARY",
+		help="Adds multiple paths to the specified library. Paths are read from the standard input stream with one path per line.")
 	ap.add_argument("--remove-path", "-rp",
 		nargs=2,
 		type=str,
@@ -277,7 +286,7 @@ if __name__ == "__main__":
 	elif args.list_libraries:
 		print "Libraries:"
 		libs = Library.open_libraries()
-		for name, library in libs.iteritems():
+		for name, library in sorted(libs.iteritems()):
 			print "  ",library
 
 	# add a path to a library
@@ -289,6 +298,21 @@ if __name__ == "__main__":
 			sys.exit()
 
 		libs[name].add_path(path)
+		Library.save_libraries()
+
+	# import multiple paths from stdin
+	elif args.add_paths:
+		libs = Library.open_libraries()
+		name = args.add_paths
+
+		if name not in libs:
+			sys.exit()
+
+		for path in sys.stdin:
+
+
+			libs[name].add_path(path[:-1])
+
 		Library.save_libraries()
 
 	# remove a path from a library
