@@ -67,7 +67,14 @@ class Library:
 	# list the paths associated with this library
 	def list_paths(self):
 		for path in self.paths:
-			print path
+			print "  ",path
+
+		print "["+str(len(self.paths))+" total]"
+
+	# print the paths in a format that can be read in again using --import-paths
+	def export_paths(self):
+		for path in self.paths:
+			print "~~/"+path
 
 	def check_path(self, path):
 		if path.startswith("~~/"):
@@ -250,6 +257,11 @@ if __name__ == "__main__":
 		dest="import_paths",
 		metavar="LIBRARY",
 		help="Imports multiple paths to the specified library. Paths are read from the standard input stream with one path per line.")
+	ap.add_argument("--export-paths", "-ep",
+		type=str,
+		dest="export_paths",
+		metavar="LIBRARY",
+		help="Exports the paths for the given library to a plaintext format which can then be read in again using --import-paths.")
 	ap.add_argument("--remove-path", "-rp",
 		nargs=2,
 		type=str,
@@ -317,6 +329,16 @@ if __name__ == "__main__":
 			libs[name].add_path(path[:-1])
 
 		Library.save_libraries()
+
+	# export paths from a library
+	elif args.export_paths:
+		libs = Library.open_libraries()
+		name = args.export_paths
+
+		if name not in libs:
+			sys.exit()
+
+		libs[name].export_paths()
 
 	# remove a path from a library
 	elif args.remove_path:
