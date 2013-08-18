@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import multiprocessing as mp, os, shutil, subprocess, sys, time, argparse, cPickle as pickle
+import fnmatch, re
 from sets import Set
 
 class Library:
@@ -81,6 +82,23 @@ class Library:
 			return os.path.join(self.source, path[3:])
 		else:
 			return path
+
+	# transcode everything that needs to be in the library
+	def transcode(self):
+		fext = ".flac"
+		cext = [".jpg", ".png"]
+
+		for path in self.paths:
+			for root, dirs, files in os.walk(path):
+				files = [os.path.join(root, f) for f in files]
+
+				tfiles = fnmatch.filter(files, "*"+fext)
+				cfiles = []
+
+				print files
+
+				# for t in tfiles:
+				# 	print t
 
 	# open a libraries file
 	@staticmethod
@@ -375,10 +393,12 @@ if __name__ == "__main__":
 		at = AudioTranscoder()
 		
 		print "--- Audio Transcoder ---"
+		print "  Workers: "+str(mp.cpu_count())
 		
-		print "    Workers: "+str(mp.cpu_count())
-		print "  Base path: "+at.base
-		print "Target base: "+at.target
-		
-		at.process_directory(0)
-		at.process_directory(1)
+		libs = Library.open_libraries()
+
+		for name, library in sorted(libs.iteritems()):
+			library.transcode()
+
+		# at.process_directory(0)
+		# at.process_directory(1)
