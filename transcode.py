@@ -6,7 +6,8 @@ from sets import Set
 
 class Library:
 	libs = dict()
-	encoder_path = "encoders/ogg-q5.sh"
+	# encoder_path = "encoders/ogg-q5.sh"
+	script_path = "encoders/skip.sh"
 
 	def __init__(self, name, source, target):
 		self.name = name
@@ -20,7 +21,10 @@ class Library:
 			sys.stderr.write("Could not add new library as another library of the same name already exists!")
 
 	def __str__(self):
-		return self.name+" ["+str(len(self.paths))+" paths]: '"+self.source+"' -> '"+self.target+"'"
+		return self.name+" ["+str(len(self.paths))+" paths]\n" \
+			+"  source dir  = "+self.source+"\n" \
+			+"  target dir  = "+self.target+"\n" \
+			+"  script path = "+self.script_path;
 
 	# adds a path to the library
 	def add_path(self, path):
@@ -87,8 +91,8 @@ class Library:
 			return path
 
 	# applies a new transcoder
-	def set_transcoder(self, transcoder):
-		self.transcoder = transcoder
+	def set_script(self, path):
+		self.script_path = path
 
 	# transcode everything that needs to be in the library
 	def transcode(self):
@@ -276,12 +280,12 @@ if __name__ == "__main__":
 	ap.add_argument("--list-libraries", "-ll",
 		action="store_true",
 		help="Lists the library directories that are scanned for audio files.")
-	ap.add_argument("--set-transcoder-path", "-st",
-		nargs=3,
+	ap.add_argument("--set-script-path", "-ssp",
+		nargs=2,
 		type=str,
-		dest="set_transcoder",
+		dest="set_script",
 		metavar=("LIBRARY", "PATH"),
-		help="Set the transcoding method for a library.")
+		help="Set the transcoding script path for a library.")
 
 	ap.add_argument("--add-path", "-ap",
 		nargs=2,
@@ -318,7 +322,7 @@ if __name__ == "__main__":
 		help="Lists the paths being watched under a specified library.")
 
 	args = ap.parse_args()
-	Library.open_libraries()
+	libs = Library.open_libraries()
 
 	# add a library
 	if args.add_library:
@@ -335,16 +339,19 @@ if __name__ == "__main__":
 
 	# list the available libraries
 	elif args.list_libraries:
-		print "Libraries:"
+		print "Libraries\n"
 		for name, library in sorted(libs.iteritems()):
-			print "  ",library
+			print library
 
 	# change a libraries transcoder using the prebuilt transcoder settings
-	elif args.set_transcoder:
-		name = args.set_transcoder
+	elif args.set_script:
+		name, path = args.set_script
 
 		if name not in libs:
 			sys.exit()
+
+		libs[name].set_script(path)
+		Library.save_libraries()
 
 	# add a path to a library
 	elif args.add_path:
