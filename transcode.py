@@ -6,6 +6,7 @@ from sets import Set
 
 class Library:
 	libs = dict()
+	encoder_path = "encoders/ogg-q5.sh"
 
 	def __init__(self, name, source, target):
 		self.name = name
@@ -54,6 +55,7 @@ class Library:
 		self.paths = [p for p in self.paths if p != relpath]
 		return 0
 
+	# removes all paths under a given root directory
 	def remove_path_prefix(self, prefix):
 		prefix = os.path.abspath(prefix)
 
@@ -77,11 +79,16 @@ class Library:
 		for path in self.paths:
 			print "~~/"+path
 
+	# checks a directory and optionally places in the libraries source dir
 	def check_path(self, path):
 		if path.startswith("~~/"):
 			return os.path.join(self.source, path[3:])
 		else:
 			return path
+
+	# applies a new transcoder
+	def set_transcoder(self, transcoder):
+		self.transcoder = transcoder
 
 	# transcode everything that needs to be in the library
 	def transcode(self):
@@ -99,6 +106,13 @@ class Library:
 
 				# for t in tfiles:
 				# 	print t
+
+	# worker thread to transcode a single item
+	def transcode_worker(self, src, dst):
+		devnull = open('/dev/null', 'w')
+		p = subprocess.Popen([self.encoder_path,src,dst], stdout=devnull, stderr=devnull)
+		p.wait()
+		print "job done: "+dst
 
 	# open a libraries file
 	@staticmethod
@@ -248,7 +262,6 @@ class AudioTranscoder:
 if __name__ == "__main__":
 	ap = argparse.ArgumentParser(description="Batch transcoding of audio files")
 	
-	
 	ap.add_argument("--add-library", "-al",
 		nargs=3,
 		type=str,
@@ -263,6 +276,12 @@ if __name__ == "__main__":
 	ap.add_argument("--list-libraries", "-ll",
 		action="store_true",
 		help="Lists the library directories that are scanned for audio files.")
+	ap.add_argument("--set-transcoder-path", "-st",
+		nargs=3,
+		type=str,
+		dest="set_transcoder",
+		metavar=("LIBRARY", "PATH"),
+		help="Set the transcoding method for a library.")
 
 	ap.add_argument("--add-path", "-ap",
 		nargs=2,
@@ -299,17 +318,16 @@ if __name__ == "__main__":
 		help="Lists the paths being watched under a specified library.")
 
 	args = ap.parse_args()
+	Library.open_libraries()
 
 	# add a library
 	if args.add_library:
-		Library.open_libraries()
 		Library(args.add_library[0], args.add_library[1], args.add_library[2])
 		Library.save_libraries()
 
 	# remove a library
 	elif args.remove_library:
 		name = args.remove_library
-		libs = Library.open_libraries()
 
 		if name in libs:
 			del libs[name]
@@ -318,13 +336,18 @@ if __name__ == "__main__":
 	# list the available libraries
 	elif args.list_libraries:
 		print "Libraries:"
-		libs = Library.open_libraries()
 		for name, library in sorted(libs.iteritems()):
 			print "  ",library
 
+	# change a libraries transcoder using the prebuilt transcoder settings
+	elif args.set_transcoder:
+		name = args.set_transcoder
+
+		if name not in libs:
+			sys.exit()
+
 	# add a path to a library
 	elif args.add_path:
-		libs = Library.open_libraries()
 		name, path = args.add_path
 		
 		if name not in libs:
@@ -335,22 +358,18 @@ if __name__ == "__main__":
 
 	# import multiple paths from stdin
 	elif args.import_paths:
-		libs = Library.open_libraries()
 		name = args.import_paths
 
 		if name not in libs:
 			sys.exit()
 
 		for path in sys.stdin:
-
-
 			libs[name].add_path(path[:-1])
 
 		Library.save_libraries()
 
 	# export paths from a library
 	elif args.export_paths:
-		libs = Library.open_libraries()
 		name = args.export_paths
 
 		if name not in libs:
@@ -360,7 +379,6 @@ if __name__ == "__main__":
 
 	# remove a path from a library
 	elif args.remove_path:
-		libs = Library.open_libraries()
 		name, path = args.remove_path
 
 		if name not in libs:
@@ -371,7 +389,6 @@ if __name__ == "__main__":
 
 	# remove paths from a library
 	elif args.remove_path_prefix:
-		libs = Library.open_libraries()
 		name, prefix = args.remove_path_prefix
 
 		if name not in libs:
@@ -382,7 +399,6 @@ if __name__ == "__main__":
 
 	# list paths for a library
 	elif args.list_paths:
-		libs = Library.open_libraries()
 		if args.list_paths in libs:
 			libs[args.list_paths].list_paths()
 		else:
@@ -394,8 +410,6 @@ if __name__ == "__main__":
 		
 		print "--- Audio Transcoder ---"
 		print "  Workers: "+str(mp.cpu_count())
-		
-		libs = Library.open_libraries()
 
 		for name, library in sorted(libs.iteritems()):
 			library.transcode()
