@@ -8,8 +8,9 @@ class Library:
 	libs = dict()
 	# encoder_path = "encoders/ogg-q5.sh"
 	script_path = "encoders/skip.sh"
+	exts = ["flac", "ogg", ["png", "jpg", "jpeg"]]
 
-	def __init__(self, name, source, target):
+	def __init__(self, name, source, target, exts):
 		self.name = name
 		self.source = os.path.abspath(source)
 		self.target = os.path.abspath(target)
@@ -95,44 +96,45 @@ class Library:
 		self.script_path = path
 
 	# transcode everything that needs to be in the library
-	def transcode(self):
+	def transcode(self, workers):
 		fext = ".flac"
 		cext = [".jpg", ".png"]
-
 		seen = set()
 
 		for path in self.paths:
 			src = os.path.join(self.source, path)
 
 			if os.path.isfile(src) and src not in seen:
-				dst = os.path.join(self.target, path)
+				dst = os.path.join(self.target, path)[:-len(self.exts[0])]+self.exts[1]
+				
+				if not os.path.isdir(os.path.dirname(dst)):
+					os.makedirs(os.path.dirname(dst))
+				
 				# print src
-				# print dst
-				self.transcode_worker(src, dst)
+				# print "",dst
+				# transcode_worker(self.script_path, src, dst)
+				# workers.apply_async(transcode_worker, (self.script_path, src, dst))
 				seen.add(src)
+
 			else:
 				for root, dirs, files in os.walk(src):
 					sf = [os.path.join(root, f) for f in files]
-					sf = fnmatch.filter(sf, "*"+fext)
+					sf = fnmatch.filter(sf, "*."+self.exts[0])
 
 					for s in sf:
 						if s not in seen:
-							d = os.path.join(self.target, os.path.relpath(s, self.source))
+							d = os.path.join(self.target, os.path.relpath(s, self.source)) \
+								[:-len(self.exts[0])]+self.exts[1]
+							
+							if not os.path.isdir(os.path.dirname(d)):
+								os.makedirs(os.path.dirname(d))
+							
 							# print s
-							# print d
-							self.transcode_worker(s, d)
+							# print "",d
+							# transcode_worker(self.script_path, s, d)
+							# workers.apply_async(transcode_worker, (self.script_path, s, d))
 							seen.add(s)
 
-
-	# worker thread to transcode a single item
-	def transcode_worker(self, src, dst):
-		if not os.path.isdir(os.path.dirname(dst)):
-			os.makedirs(os.path.dirname(dst))
-
-		devnull = open('/dev/null', 'w')
-		p = subprocess.Popen([self.script_path,src,dst], stdout=devnull, stderr=devnull)
-		p.wait()
-		print "job done: "+dst
 
 	# open a libraries file
 	@staticmethod
@@ -152,6 +154,12 @@ class Library:
 		except IOError:
 			print "Failed to save libraries!"
 
+# worker thread to transcode a single item
+def transcode_worker(script_path, src, dst):
+	devnull = open('/dev/null', 'w')
+	p = subprocess.Popen([script_path,src,dst], stdout=devnull, stderr=devnull)
+	p.wait()
+	print "job done: "+dst
 
 def transcode(src, dst, quality):
 	devnull = open('/dev/null', 'w')
@@ -434,8 +442,14 @@ if __name__ == "__main__":
 		print "--- Audio Transcoder ---"
 		print "  Workers: "+str(mp.cpu_count())
 
+		# workers = mp.Pool()
+		workers = []
+
 		for name, library in sorted(libs.iteritems()):
-			library.transcode()
+			library.transcode([])
+
+		# workers.close()
+		# workers.join()
 
 		# at.process_directory(0)
 		# at.process_directory(1)
