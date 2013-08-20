@@ -16,4 +16,9 @@ I have a collection of FLAC audio files representing my music collection on my d
 
     ./transcode.py --add-library music ~/Music ~/PhoneMusic
 
-This creates a new library called "music" with a root source directory `~/Music` and a root target directory `~/PhoneMusic`.
+This creates a new library called "music" with a root source directory `~/Music` and a root target directory `~/PhoneMusic`. I don't want all of my audio files transcoded so I add some paths to my "music" library. Paths not under the root source directory `~/Music` will fail. The shorthand `~~/` can be used to specify a path relative to the libraries root source directory. Paths can be either directories or files. In the case of a directory, _all_ valid files underneath that directory will be transcoded. I add some paths:
+
+    ./transcode.py --add-path music ~/Music/Muse/Showbiz/
+    ./transcode.py --add-path music ~/Music/Muse/Absolution
+    ./transcode.py --add-path music ~~/Bach
+    ./transcode.py --add-path music ~~/
