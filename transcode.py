@@ -99,17 +99,30 @@ class Library:
 		fext = ".flac"
 		cext = [".jpg", ".png"]
 
+		seen = set()
+
 		for path in self.paths:
-			for root, dirs, files in os.walk(path):
-				files = [os.path.join(root, f) for f in files]
+			path = os.path.join(self.source, path)
+			# print path
 
-				tfiles = fnmatch.filter(files, "*"+fext)
-				cfiles = []
+			if os.path.isfile(path) and path not in seen:
+				print path
+				seen.add(path)
+			else:
+				for root, dirs, files in os.walk(path):
+					files = [os.path.join(root, f) for f in files]
 
-				print files
+					tfiles = fnmatch.filter(files, "*"+fext)
+					cfiles = []
 
-				# for t in tfiles:
-				# 	print t
+					# print root
+					# print "  ",files
+					# print ""
+					for t in tfiles:
+						if t not in seen:
+							print t
+							seen.add(t)
+
 
 	# worker thread to transcode a single item
 	def transcode_worker(self, src, dst):
