@@ -102,32 +102,35 @@ class Library:
 		seen = set()
 
 		for path in self.paths:
-			path = os.path.join(self.source, path)
-			# print path
+			src = os.path.join(self.source, path)
 
-			if os.path.isfile(path) and path not in seen:
-				print path
-				seen.add(path)
+			if os.path.isfile(src) and src not in seen:
+				dst = os.path.join(self.target, path)
+				# print src
+				# print dst
+				self.transcode_worker(src, dst)
+				seen.add(src)
 			else:
-				for root, dirs, files in os.walk(path):
-					files = [os.path.join(root, f) for f in files]
+				for root, dirs, files in os.walk(src):
+					sf = [os.path.join(root, f) for f in files]
+					sf = fnmatch.filter(sf, "*"+fext)
 
-					tfiles = fnmatch.filter(files, "*"+fext)
-					cfiles = []
-
-					# print root
-					# print "  ",files
-					# print ""
-					for t in tfiles:
-						if t not in seen:
-							print t
-							seen.add(t)
+					for s in sf:
+						if s not in seen:
+							d = os.path.join(self.target, os.path.relpath(s, self.source))
+							# print s
+							# print d
+							self.transcode_worker(s, d)
+							seen.add(s)
 
 
 	# worker thread to transcode a single item
 	def transcode_worker(self, src, dst):
+		if not os.path.isdir(os.path.dirname(dst)):
+			os.makedirs(os.path.dirname(dst))
+
 		devnull = open('/dev/null', 'w')
-		p = subprocess.Popen([self.encoder_path,src,dst], stdout=devnull, stderr=devnull)
+		p = subprocess.Popen([self.script_path,src,dst], stdout=devnull, stderr=devnull)
 		p.wait()
 		print "job done: "+dst
 

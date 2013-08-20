@@ -38,3 +38,4 @@ nosetests.xml
 libraries.p
 *.paths
 test.flac
+test.ogg
