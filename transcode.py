@@ -8,7 +8,7 @@ class Library:
 	libs = dict()
 	# encoder_path = "encoders/ogg-q5.sh"
 	script_path = "encoders/skip.sh"
-	exts = ["flac", "ogg", ["png", "jpg", "jpeg"]]
+	exts = [".flac", ".ogg", [".png", ".jpg", ".jpeg"]]
 
 	def __init__(self, name, source, target, exts):
 		self.name = name
@@ -105,34 +105,46 @@ class Library:
 			src = os.path.join(self.source, path)
 
 			if os.path.isfile(src) and src not in seen:
-				dst = os.path.join(self.target, path)[:-len(self.exts[0])]+self.exts[1]
+				dst = os.path.join(self.target, path)
 				
-				if not os.path.isdir(os.path.dirname(dst)):
-					os.makedirs(os.path.dirname(dst))
-				
-				# print src
-				# print "",dst
-				# transcode_worker(self.script_path, src, dst)
-				# workers.apply_async(transcode_worker, (self.script_path, src, dst))
-				seen.add(src)
+				if src[-len(self.exts[0]):] == self.exts[0]:
+					dst = dst[:-len(self.exts[0])]+self.exts[1]
+					if not os.path.isdir(os.path.dirname(dst)):
+						os.makedirs(os.path.dirname(dst))
+					
+					print src
+					print "",dst
+					# transcode_worker(self.script_path, src, dst)
+					# workers.apply_async(transcode_worker, (self.script_path, src, dst))
+				else:
+					shutil.copy2(src,dst)
 
+				seen.add(src)
 			else:
 				for root, dirs, files in os.walk(src):
-					sf = [os.path.join(root, f) for f in files]
-					sf = fnmatch.filter(sf, "*."+self.exts[0])
+					files = [os.path.join(root, f) for f in files]
+					sf = fnmatch.filter(files, "*"+self.exts[0])
+
+					for c in self.exts[2]:
+						sf.extend(fnmatch.filter(files, "*"+c))
 
 					for s in sf:
 						if s not in seen:
-							d = os.path.join(self.target, os.path.relpath(s, self.source)) \
-								[:-len(self.exts[0])]+self.exts[1]
-							
-							if not os.path.isdir(os.path.dirname(d)):
-								os.makedirs(os.path.dirname(d))
-							
-							# print s
-							# print "",d
-							# transcode_worker(self.script_path, s, d)
-							# workers.apply_async(transcode_worker, (self.script_path, s, d))
+							d = os.path.join(self.target, os.path.relpath(s, self.source))
+
+							if s[-len(self.exts[0]):] == self.exts[0]:
+								d = d[:-len(self.exts[0])]+self.exts[1]
+								
+								if not os.path.isdir(os.path.dirname(d)):
+									os.makedirs(os.path.dirname(d))
+								
+								print s
+								print "",d
+								# transcode_worker(self.script_path, s, d)
+								# workers.apply_async(transcode_worker, (self.script_path, s, d))
+							else:
+								shutil.copy2(s,d)
+
 							seen.add(s)
 
 
