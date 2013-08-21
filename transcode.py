@@ -10,11 +10,12 @@ class Library:
 	script_path = "encoders/skip.sh"
 	exts = [".flac", ".ogg", [".png", ".jpg", ".jpeg"]]
 
-	def __init__(self, name, source, target, exts):
+	def __init__(self, name, source, target):
 		self.name = name
 		self.source = os.path.abspath(source)
 		self.target = os.path.abspath(target)
 		self.paths = []
+		self.exts = Library.exts
 
 		if name not in Library.libs:
 			Library.libs[name] = self
@@ -25,7 +26,10 @@ class Library:
 		return self.name+" ["+str(len(self.paths))+" paths]\n" \
 			+"  source dir  = "+self.source+"\n" \
 			+"  target dir  = "+self.target+"\n" \
-			+"  script path = "+self.script_path;
+			+"  script path = "+self.script_path+"\n" \
+			+"  source ext  = "+self.exts[0]+"\n" \
+			+"  target ext  = "+self.exts[1]+"\n" \
+			+"  copy exts   = "+str(self.exts[2]);
 
 	# adds a path to the library
 	def add_path(self, path):
@@ -95,10 +99,11 @@ class Library:
 	def set_script(self, path):
 		self.script_path = path
 
+	def set_source_ext(self, ext):
+		self.exts[0] = ext
+
 	# transcode everything that needs to be in the library
 	def transcode(self, workers):
-		fext = ".flac"
-		cext = [".jpg", ".png"]
 		seen = set()
 
 		for path in self.paths:
@@ -112,9 +117,9 @@ class Library:
 					if not os.path.isdir(os.path.dirname(dst)):
 						os.makedirs(os.path.dirname(dst))
 					
-					print src
-					print "",dst
-					# transcode_worker(self.script_path, src, dst)
+					# print src
+					# print "",dst
+					transcode_worker(self.script_path, src, dst)
 					# workers.apply_async(transcode_worker, (self.script_path, src, dst))
 				else:
 					shutil.copy2(src,dst)
@@ -138,9 +143,9 @@ class Library:
 								if not os.path.isdir(os.path.dirname(d)):
 									os.makedirs(os.path.dirname(d))
 								
-								print s
-								print "",d
-								# transcode_worker(self.script_path, s, d)
+								# print s
+								# print "",d
+								transcode_worker(self.script_path, s, d)
 								# workers.apply_async(transcode_worker, (self.script_path, s, d))
 							else:
 								shutil.copy2(s,d)
@@ -322,6 +327,12 @@ if __name__ == "__main__":
 		dest="set_script",
 		metavar=("LIBRARY", "PATH"),
 		help="Set the transcoding script path for a library.")
+	ap.add_argument("--set-source-extension", "-sse",
+		nargs=2,
+		type=str,
+		dest="set_source_ext",
+		metavar=("LIBRARY", "EXTENSION"),
+		help="Set the source file extension. This should include the preceeding period. Example: for FLAC source audio files, set the extension to '.flac'")
 
 	ap.add_argument("--add-path", "-ap",
 		nargs=2,
@@ -387,6 +398,16 @@ if __name__ == "__main__":
 			sys.exit()
 
 		libs[name].set_script(path)
+		Library.save_libraries()
+
+	# set the source file extensions
+	elif args.set_source_ext:
+		name, ext = args.set_source_ext
+
+		if name not in libs:
+			sys.exit()
+
+		libs[name].set_source_ext(ext)
 		Library.save_libraries()
 
 	# add a path to a library
