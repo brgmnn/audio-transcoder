@@ -332,6 +332,12 @@ if __name__ == "__main__":
 		dest="set_target_ext",
 		metavar=("LIBRARY", "EXTENSION"),
 		help="Set the target output file extension. This should include the preceeding period. Example: for MP3 output files, set this extension to '.mp3'")
+	ap.add_argument("--add-copy-extension", "-ace",
+		nargs=2,
+		type=str,
+		dest="add_copy_ext",
+		metavar=("LIBRARY", "EXTENSION(S)"),
+		help="Add copy extensions. Multiple extensions can be specified, separated by a comma. Copy extensions are a list of file extensions which files are to be copied over from the source to target tree. This could be used to copy image files so that album art is transfered over to the target directory.")
 
 	ap.add_argument("--add-path", "-ap",
 		nargs=2,
@@ -417,6 +423,17 @@ if __name__ == "__main__":
 			sys.exit()
 
 		libs[name].exts[1] = ext
+		Library.save_libraries()
+
+	# adds extensions to the copy list
+	elif args.add_copy_ext:
+		name, exts = args.add_copy_ext
+
+		if name not in libs:
+			sys.exit()
+
+		libs[name].exts[2].extend(exts.replace(",", " ").split())
+		libs[name].exts[2].sort()
 		Library.save_libraries()
 
 	# add a path to a library
