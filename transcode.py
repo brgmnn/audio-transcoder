@@ -95,13 +95,6 @@ class Library:
 		else:
 			return path
 
-	# applies a new transcoder
-	def set_script(self, path):
-		self.script_path = path
-
-	def set_source_ext(self, ext):
-		self.exts[0] = ext
-
 	# transcode everything that needs to be in the library
 	def transcode(self, workers):
 		seen = set()
@@ -332,7 +325,13 @@ if __name__ == "__main__":
 		type=str,
 		dest="set_source_ext",
 		metavar=("LIBRARY", "EXTENSION"),
-		help="Set the source file extension. This should include the preceeding period. Example: for FLAC source audio files, set the extension to '.flac'")
+		help="Set the source file extension. This should include the preceeding period. Example: for FLAC source audio files, set this extension to '.flac'")
+	ap.add_argument("--set-target-extension", "-ste",
+		nargs=2,
+		type=str,
+		dest="set_target_ext",
+		metavar=("LIBRARY", "EXTENSION"),
+		help="Set the target output file extension. This should include the preceeding period. Example: for MP3 output files, set this extension to '.mp3'")
 
 	ap.add_argument("--add-path", "-ap",
 		nargs=2,
@@ -397,7 +396,7 @@ if __name__ == "__main__":
 		if name not in libs:
 			sys.exit()
 
-		libs[name].set_script(path)
+		libs[name].script_path = path
 		Library.save_libraries()
 
 	# set the source file extensions
@@ -407,7 +406,17 @@ if __name__ == "__main__":
 		if name not in libs:
 			sys.exit()
 
-		libs[name].set_source_ext(ext)
+		libs[name].exts[0] = ext
+		Library.save_libraries()
+
+	# set the target file extensions
+	elif args.set_target_ext:
+		name, ext = args.set_target_ext
+
+		if name not in libs:
+			sys.exit()
+
+		libs[name].exts[1] = ext
 		Library.save_libraries()
 
 	# add a path to a library
