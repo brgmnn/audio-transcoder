@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import multiprocessing as mp, os, shutil, subprocess, sys, time, argparse, cPickle as pickle
+import multiprocessing as mp, os, shutil, subprocess, sys, time, argparse, pickle
 import fnmatch, re
 from sets import Set
 
@@ -8,14 +8,17 @@ class Library:
 	libs = dict()
 	# encoder_path = "encoders/ogg-q5.sh"
 	script_path = "encoders/skip.sh"
-	exts = [".flac", ".ogg", [".png", ".jpg", ".jpeg"]]
+	# exts = [".flac", ".ogg", [".png", ".jpg", ".jpeg"]]
+	exts = [".flac", ".ogg"]
+	# cexts = [".png", ".jpg", ".jpeg"]
 
 	def __init__(self, name, source, target):
 		self.name = name
 		self.source = os.path.abspath(source)
 		self.target = os.path.abspath(target)
 		self.paths = []
-		self.exts = Library.exts
+		# self.exts = [".flac", ".ogg"]
+		self.cexts = [".png", ".jpg", ".jpeg"]
 
 		if name not in Library.libs:
 			Library.libs[name] = self
@@ -29,7 +32,7 @@ class Library:
 			+"  script path = "+self.script_path+"\n" \
 			+"  source ext  = "+self.exts[0]+"\n" \
 			+"  target ext  = "+self.exts[1]+"\n" \
-			+"  copy exts   = "+str(self.exts[2]);
+			+"  copy exts   = "+str(self.cexts);
 
 	# adds a path to the library
 	def add_path(self, path):
@@ -123,7 +126,7 @@ class Library:
 					files = [os.path.join(root, f) for f in files]
 					sf = fnmatch.filter(files, "*"+self.exts[0])
 
-					for c in self.exts[2]:
+					for c in self.cexts:
 						sf.extend(fnmatch.filter(files, "*"+c))
 
 					for s in sf:
@@ -338,6 +341,11 @@ if __name__ == "__main__":
 		dest="add_copy_ext",
 		metavar=("LIBRARY", "EXTENSION(S)"),
 		help="Add copy extensions. Multiple extensions can be specified, separated by a comma. Copy extensions are a list of file extensions which files are to be copied over from the source to target tree. This could be used to copy image files so that album art is transfered over to the target directory.")
+	ap.add_argument("--clear-copy-extensions", "-cce",
+		type=str,
+		dest="clear_copy_exts",
+		metavar="LIBRARY",
+		help="Clears the copy extension list for a library. After calling this command no files will be copied over from the source to target tree.")
 
 	ap.add_argument("--add-path", "-ap",
 		nargs=2,
@@ -432,8 +440,20 @@ if __name__ == "__main__":
 		if name not in libs:
 			sys.exit()
 
-		libs[name].exts[2].extend(exts.replace(",", " ").split())
-		libs[name].exts[2].sort()
+		libs[name].cexts.extend(exts.replace(",", " ").split())
+		libs[name].cexts.sort()
+		Library.save_libraries()
+
+	# clears the copy list for the library
+	elif args.clear_copy_exts:
+		name = args.add_copy_ext
+
+		if name not in libs:
+			sys.exit()
+
+		# libs[name].cexts.pop()
+		# libs[name].exts = [libs[name].exts[0], libs[name].exts[1], []]
+		libs[name].cexts = []
 		Library.save_libraries()
 
 	# add a path to a library
