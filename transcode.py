@@ -8,7 +8,6 @@ class Library:
 	libs = dict()
 	# encoder_path = "encoders/ogg-q5.sh"
 	script_path = "encoders/skip.sh"
-	# exts = [".flac", ".ogg", [".png", ".jpg", ".jpeg"]]
 	exts = [".flac", ".ogg"]
 	# cexts = [".png", ".jpg", ".jpeg"]
 
@@ -38,15 +37,12 @@ class Library:
 	def add_path(self, path):
 		path = os.path.abspath(self.check_path(path))
 
-		# if os.path.commonprefix([self.source, path]) != self.source:
 		if not path.startswith(self.source):
 			print "paths dont match"
 			print self.source
 			print path
 			return 1
 
-
-		# prefix = os.path.commonprefix([libs[name].source, path])
 		relpath = os.path.relpath(path, self.source)
 		print relpath
 		print os.path.join(self.source, relpath)
@@ -63,7 +59,6 @@ class Library:
 			return 1
 
 		relpath = os.path.relpath(path, self.source)
-
 		self.paths = [p for p in self.paths if p != relpath]
 		return 0
 
@@ -75,7 +70,6 @@ class Library:
 			return 1
 
 		relprefix = os.path.relpath(prefix, self.source)
-
 		self.paths = [p for p in self.paths if not p.startswith(relprefix)]
 		return 0
 
@@ -83,7 +77,6 @@ class Library:
 	def list_paths(self):
 		for path in self.paths:
 			print "  ",path
-
 		print "["+str(len(self.paths))+" total]"
 
 	# print the paths in a format that can be read in again using --import-paths
@@ -95,8 +88,7 @@ class Library:
 	def check_path(self, path):
 		if path.startswith("~~/"):
 			return os.path.join(self.source, path[3:])
-		else:
-			return path
+		return path
 
 	# transcode everything that needs to be in the library
 	def transcode(self, workers):
@@ -171,12 +163,6 @@ class Library:
 def transcode_worker(script_path, src, dst):
 	devnull = open('/dev/null', 'w')
 	p = subprocess.Popen([script_path,src,dst], stdout=devnull, stderr=devnull)
-	p.wait()
-	print "job done: "+dst
-
-def transcode(src, dst, quality):
-	devnull = open('/dev/null', 'w')
-	p = subprocess.Popen(["oggenc","-q",str(quality),src,"-o",dst], stdout=devnull, stderr=devnull)
 	p.wait()
 	print "job done: "+dst
 
@@ -529,6 +515,3 @@ if __name__ == "__main__":
 
 		# workers.close()
 		# workers.join()
-
-		# at.process_directory(0)
-		# at.process_directory(1)
