@@ -1,9 +1,32 @@
 #!/usr/bin/env python
 
 import multiprocessing as mp, os, shutil, subprocess, sys, time, argparse, pickle
-import fnmatch, re
+import fnmatch, re, json
 from sets import Set
 
+# holds the global settings for the transcoder.
+class Settings:
+	properties = dict()
+
+	@staticmethod
+	def open():
+		try:
+			Settings.properties = json.loads(open("settings.json", "rb").read())
+		except IOError:
+			print "Failed to open 'settings.json'. Attempting to create it now..."
+			Settings.save()
+		return Settings.properties
+
+	@staticmethod
+	def save():
+		try:
+			Settings.properties["default_copy_exts"].sort()
+			open("settings.json", "wb").write(\
+				json.dumps(settings, sort_keys=True, indent=4, separators=(',', ': ')))
+		except IOError:
+			print "Failed to save 'settings.json'."
+
+# handles each library of audio files.
 class Library:
 	libs = dict()
 	# encoder_path = "encoders/ogg-q5.sh"
@@ -502,16 +525,14 @@ if __name__ == "__main__":
 
 	# transcode anything that's missing
 	else:
-		at = AudioTranscoder()
-		
 		print "--- Audio Transcoder ---"
 		print "  Workers: "+str(mp.cpu_count())
 
-		# workers = mp.Pool()
+		# # workers = mp.Pool()
 		workers = []
 
 		for name, library in sorted(libs.iteritems()):
 			library.transcode([])
-
+		
 		# workers.close()
 		# workers.join()

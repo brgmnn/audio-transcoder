@@ -1,0 +1,14 @@
+{
+    "default_copy_exts": [
+        ".bmp",
+        ".jpeg",
+        ".jpg",
+        ".png"
+    ],
+    "default_exts": [
+        ".flac",
+        ".ogg"
+    ],
+    "hmm": 1234.567899999999,
+    "name": "hello world"
+}
