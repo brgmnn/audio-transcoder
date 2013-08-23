@@ -22,7 +22,8 @@ class Settings:
 		try:
 			Settings.properties["default_copy_exts"].sort()
 			open("settings.json", "wb").write(\
-				json.dumps(settings, sort_keys=True, indent=4, separators=(',', ': ')))
+				json.dumps(Settings.properties, sort_keys=True, indent=4,\
+					separators=(',', ': ')))
 		except IOError:
 			print "Failed to save 'settings.json'."
 
@@ -30,17 +31,21 @@ class Settings:
 class Library:
 	libs = dict()
 	# encoder_path = "encoders/ogg-q5.sh"
-	script_path = "encoders/skip.sh"
-	exts = [".flac", ".ogg"]
+	# script_path = "encoders/skip.sh"
+	# exts = [".flac", ".ogg"]
 	# cexts = [".png", ".jpg", ".jpeg"]
+
+	def __init__(self, json_str):
+		return self.json_decode(json_str)
 
 	def __init__(self, name, source, target):
 		self.name = name
 		self.source = os.path.abspath(source)
 		self.target = os.path.abspath(target)
 		self.paths = []
-		# self.exts = [".flac", ".ogg"]
-		self.cexts = [".png", ".jpg", ".jpeg"]
+		self.script_path = Settings.properties["default_script_path"]
+		self.exts = list(Settings.properties["default_exts"])
+		self.cexts = list(Settings.properties["default_copy_exts"])
 
 		if name not in Library.libs:
 			Library.libs[name] = self
@@ -163,6 +168,28 @@ class Library:
 
 							seen.add(s)
 
+	# encodes the library to a json string
+	def json_encode(self):
+		d = dict()
+		d["name"] = self.name
+		d["source"] = self.source
+		d["target"] = self.target
+		d["paths"] = self.paths
+		d["script_path"] = self.script_path
+		d["exts"] = self.exts
+		d["cexts"] = self.cexts
+		return json.dumps(d, sort_keys=True, indent=4, separators=(',', ': ')))
+
+	# decodes and updates this library from a json string
+	def json_decode(self, json_string):
+		d = json.loads(json_string)
+		self.name = d["name"]
+		self.source = d["source"]
+		self.target = d["target"]
+		self.paths = d["paths"]
+		self.script_path = d["script_path"]
+		self.exts = d["exts"]
+		self.cexts = d["cexts"]
 
 	# open a libraries file
 	@staticmethod
@@ -392,6 +419,8 @@ if __name__ == "__main__":
 
 	args = ap.parse_args()
 	libs = Library.open_libraries()
+	settings = Settings.open()
+	Settings.save()
 
 	# add a library
 	if args.add_library:
@@ -529,10 +558,10 @@ if __name__ == "__main__":
 		print "  Workers: "+str(mp.cpu_count())
 
 		# # workers = mp.Pool()
-		workers = []
+		# workers = []
 
-		for name, library in sorted(libs.iteritems()):
-			library.transcode([])
-		
+		# for name, library in sorted(libs.iteritems()):
+		# 	library.transcode([])
+
 		# workers.close()
 		# workers.join()

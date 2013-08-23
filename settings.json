@@ -6,9 +6,9 @@
         ".png"
     ],
     "default_exts": [
-        ".flac",
-        ".ogg"
+        ".wav",
+        ".mp3"
     ],
-    "hmm": 1234.567899999999,
+    "default_script_path": "encoders/ogg-q5.sh",
     "name": "hello world"
 }
