@@ -43,9 +43,11 @@ class Library:
 		self.source = os.path.abspath(source)
 		self.target = os.path.abspath(target)
 		self.paths = []
-		self.script_path = Settings.properties["default_script_path"]
-		self.exts = list(Settings.properties["default_exts"])
-		self.cexts = list(Settings.properties["default_copy_exts"])
+		self.script_path = Settings.properties["default_script_path"].encode('ascii', 'ignore')
+		self.exts = [e.encode('ascii', 'ignore') for e in Settings.properties["default_exts"]]
+		self.cexts = [e.encode('ascii', 'ignore') for e in Settings.properties["default_copy_exts"]]
+		# self.exts = list(Settings.properties["default_exts"]).encode('ascii', 'ignore')
+		# self.cexts = list(Settings.properties["default_copy_exts"]).encode('ascii', 'ignore')
 
 		if name not in Library.libs:
 			Library.libs[name] = self
@@ -127,17 +129,17 @@ class Library:
 
 			if os.path.isfile(src) and src not in seen:
 				dst = os.path.join(self.target, path)
-				
+
 				if src[-len(self.exts[0]):] == self.exts[0]:
 					dst = dst[:-len(self.exts[0])]+self.exts[1]
 					if not os.path.isdir(os.path.dirname(dst)):
 						os.makedirs(os.path.dirname(dst))
 					
-					# print src
-					# print "",dst
-					transcode_worker(self.script_path, src, dst)
-					# workers.apply_async(transcode_worker, (self.script_path, src, dst))
+					# transcode_worker(self.script_path, src, dst)
+					workers.apply_async(transcode_worker, (self.script_path, src, dst))
 				else:
+					if not os.path.isdir(os.path.dirname(dst)):
+						os.makedirs(os.path.dirname(dst))
 					shutil.copy2(src,dst)
 
 				seen.add(src)
@@ -159,11 +161,11 @@ class Library:
 								if not os.path.isdir(os.path.dirname(d)):
 									os.makedirs(os.path.dirname(d))
 								
-								# print s
-								# print "",d
-								transcode_worker(self.script_path, s, d)
-								# workers.apply_async(transcode_worker, (self.script_path, s, d))
+								# transcode_worker(self.script_path, s, d)
+								workers.apply_async(transcode_worker, (self.script_path, s, d))
 							else:
+								if not os.path.isdir(os.path.dirname(d)):
+									os.makedirs(os.path.dirname(d))
 								shutil.copy2(s,d)
 
 							seen.add(s)
@@ -178,7 +180,7 @@ class Library:
 		d["script_path"] = self.script_path
 		d["exts"] = self.exts
 		d["cexts"] = self.cexts
-		return json.dumps(d, sort_keys=True, indent=4, separators=(',', ': ')))
+		return json.dumps(d, sort_keys=True, indent=4, separators=(',', ': '))
 
 	# decodes and updates this library from a json string
 	def json_decode(self, json_string):
@@ -557,11 +559,11 @@ if __name__ == "__main__":
 		print "--- Audio Transcoder ---"
 		print "  Workers: "+str(mp.cpu_count())
 
-		# # workers = mp.Pool()
+		workers = mp.Pool()
 		# workers = []
 
-		# for name, library in sorted(libs.iteritems()):
-		# 	library.transcode([])
+		for name, library in sorted(libs.iteritems()):
+			library.transcode(workers)
 
-		# workers.close()
-		# workers.join()
+		workers.close()
+		workers.join()

@@ -1,14 +1,14 @@
 {
     "default_copy_exts": [
-        ".bmp",
-        ".jpeg",
-        ".jpg",
-        ".png"
+        "cover.bmp",
+        "cover.jpeg",
+        "cover.jpg",
+        "cover.png"
     ],
     "default_exts": [
-        ".wav",
-        ".mp3"
+        ".flac",
+        ".ogg"
     ],
-    "default_script_path": "encoders/ogg-q5.sh",
+    "default_script_path": "encoders/skip.sh",
     "name": "hello world"
 }
