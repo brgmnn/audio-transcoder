@@ -198,6 +198,9 @@ class Library:
 	def open_libraries():
 		try:
 			Library.libs = pickle.load(open("libraries.p", "rb"))
+
+			# Settings.properties = json.loads(open("settings.json", "rb").read())
+
 		except IOError:
 			print "Failed to open libraries file. Attempting to create a new file..."
 			Library.save_libraries()
@@ -208,6 +211,13 @@ class Library:
 	def save_libraries():
 		try:
 			pickle.dump(Library.libs, open("libraries.p", "wb"))
+
+			for lib in Library.libs:
+				open("libraries/"+lib.name+".json", "wb").write(\
+					json.dumps(lib.json_decode(), sort_keys=True, indent=4,\
+						separators=(',', ': ')))
+
+
 		except IOError:
 			print "Failed to save libraries!"
 
@@ -442,6 +452,9 @@ if __name__ == "__main__":
 		print "Libraries\n"
 		for name, library in sorted(libs.iteritems()):
 			print library
+
+		# not needed. just used for debugging. remove later
+		Library.save_libraries()
 
 	# change a libraries transcoder using the prebuilt transcoder settings
 	elif args.set_script:
