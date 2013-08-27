@@ -36,6 +36,8 @@ nosetests.xml
 
 # User Settings files
 libraries.p
+*.db3
+*.db3-journal
 *.paths
 test.flac
 test.ogg

@@ -517,7 +517,21 @@ if __name__ == "__main__":
 		fp = open("profile.db3", "rw+")
 		fp.truncate()
 		fp.close()
+		
 		conn = sqlite3.connect("profile.db3")
+		c = conn.cursor()
+		c.execute("CREATE TABLE libraries \
+			(	id INTEGER, \
+				name TEXT, \
+				source TEXT, \
+				target TEXT, \
+				source_ext TEXT, \
+				target_ext TEXT, \
+				copy_ext TEXT,\
+			CONSTRAINT lib_id \
+				PRIMARY KEY (id))")
+
+		conn.commit()
 
 	# add a path to a library
 	elif args.add_path:
