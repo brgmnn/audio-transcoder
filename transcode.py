@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import multiprocessing as mp, os, shutil, subprocess, sys, time, argparse, pickle
-import fnmatch, re, json
+import fnmatch, re, json, sqlite3
 from sets import Set
 
 # holds the global settings for the transcoder.
@@ -195,7 +195,7 @@ class Library:
 
 	# open a libraries file
 	@staticmethod
-	def open_libraries():
+	def open_libraries(connection):
 		try:
 			Library.libs = pickle.load(open("libraries.p", "rb"))
 
@@ -211,13 +211,6 @@ class Library:
 	def save_libraries():
 		try:
 			pickle.dump(Library.libs, open("libraries.p", "wb"))
-
-			for lib in Library.libs:
-				open("libraries/"+lib.name+".json", "wb").write(\
-					json.dumps(lib.json_decode(), sort_keys=True, indent=4,\
-						separators=(',', ': ')))
-
-
 		except IOError:
 			print "Failed to save libraries!"
 
@@ -351,6 +344,7 @@ class AudioTranscoder:
 if __name__ == "__main__":
 	ap = argparse.ArgumentParser(description="Batch transcoding of audio files")
 	
+	# library operations
 	ap.add_argument("--add-library", "-al",
 		nargs=3,
 		type=str,
@@ -395,6 +389,7 @@ if __name__ == "__main__":
 		metavar="LIBRARY",
 		help="Clears the copy extension list for a library. After calling this command no files will be copied over from the source to target tree.")
 
+	# path operations
 	ap.add_argument("--add-path", "-ap",
 		nargs=2,
 		type=str,
@@ -429,8 +424,16 @@ if __name__ == "__main__":
 		metavar="LIBRARY",
 		help="Lists the paths being watched under a specified library.")
 
+	# profile operations
+	ap.add_argument("--create-profile", "-cp",
+		action="store_true",
+		dest="create_profile",
+		help="Creates a new blank profile. A profile contains all libraries, paths and settings for the application.")
+
 	args = ap.parse_args()
-	libs = Library.open_libraries()
+	conn = sqlite3.connect("profile.db3")
+	
+	libs = Library.open_libraries(conn)
 	settings = Settings.open()
 	Settings.save()
 
@@ -509,6 +512,13 @@ if __name__ == "__main__":
 		libs[name].cexts = []
 		Library.save_libraries()
 
+	elif args.create_profile:
+		conn.close()
+		fp = open("profile.db3", "rw+")
+		fp.truncate()
+		fp.close()
+		conn = sqlite3.connect("profile.db3")
+
 	# add a path to a library
 	elif args.add_path:
 		name, path = args.add_path
@@ -580,3 +590,5 @@ if __name__ == "__main__":
 
 		workers.close()
 		workers.join()
+
+	conn.close()
