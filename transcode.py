@@ -250,7 +250,7 @@ class Library:
 	def list_names():
 		c = db_connection.cursor()
 		c.execute("SELECT name FROM libraries ORDER BY name ASC")
-		return c.fetchall()
+		return [n[0] for n in c.fetchall()]
 
 	# removes a library given its name
 	@staticmethod
@@ -408,23 +408,16 @@ if __name__ == "__main__":
 	if args.add_library:
 		Library(args.add_library[0], args.add_library[1], args.add_library[2])
 
-	# remove a library
+	# remove a library - SQL
 	elif args.remove_library:
 		name = args.remove_library
 		Library.remove(name)
 
-	# list the available libraries
+	# list the available libraries -SQL
 	elif args.list_libraries:
-		print "  Libraries"
-		for name, library in sorted(libs.iteritems()):
-			print library
-
-		print "\n  SQL Libraries"
-		for lib in Library.list_names():
-			print lib[0]
-
-		# not needed. just used for debugging. remove later
-		Library.save_libraries()
+		print "Libraries\n"
+		for name in Library.list_names():
+			print Library(name)
 
 	# change a libraries transcoder using the prebuilt transcoder settings
 	elif args.set_script:
