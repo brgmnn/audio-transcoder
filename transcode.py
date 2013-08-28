@@ -4,6 +4,8 @@ import multiprocessing as mp, os, shutil, subprocess, sys, time, argparse, pickl
 import fnmatch, re, json, sqlite3
 from sets import Set
 
+db_connection = sqlite3.connect("profile.db3")
+
 # holds the global settings for the transcoder.
 class Settings:
 	properties = dict()
@@ -35,8 +37,18 @@ class Library:
 	# exts = [".flac", ".ogg"]
 	# cexts = [".png", ".jpg", ".jpeg"]
 
-	def __init__(self, json_str):
-		return self.json_decode(json_str)
+	def __init__(self, name):
+		c = db_connection.cursor()
+		c.execute("SELECT * FROM libraries WHERE name=?", (name,))
+		row = c.fetchone()
+
+		self.name = row[1]
+		self.source = row[2]
+		self.target = row[3]
+		self.script_path = row[4]
+		self.exts = [row[5], row[6]]
+		self.cexts = row[7].split(" ")
+		self.paths = []
 
 	def __init__(self, name, source, target):
 		self.name = name
@@ -195,7 +207,7 @@ class Library:
 
 	# open a libraries file
 	@staticmethod
-	def open_libraries(connection):
+	def open_libraries():
 		try:
 			Library.libs = pickle.load(open("libraries.p", "rb"))
 
@@ -214,6 +226,13 @@ class Library:
 		except IOError:
 			print "Failed to save libraries!"
 
+	@staticmethod
+	def list_names():
+		c = db_connection.cursor()
+		c.execute("SELECT name FROM libraries ORDER BY name ASC")
+		return c.fetchall()
+
+
 # worker thread to transcode a single item
 def transcode_worker(script_path, src, dst):
 	devnull = open('/dev/null', 'w')
@@ -222,86 +241,6 @@ def transcode_worker(script_path, src, dst):
 	print "job done: "+dst
 
 class AudioTranscoder:
-	# process a directorys
-	def process_directory(self, pindex):
-		print "\n~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~"
-		print "    File list="+self.base_dir[pindex]+".paths"
-		print "    Encoding FLACs..."
-		
-		self.workers = mp.Pool()
-		f = open( sys.path[0]+"/"+self.base_dir[pindex]+".paths", "r" )
-				
-
-		for path in f.readlines():
-			target = self.target+"/"+self.target_dir[pindex]+"/"+path.rstrip("\n")
-			path = self.base+"/"+self.base_dir[pindex]+"/"+path.rstrip("\n")
-			#print path
-			#print target
-			
-			if os.path.isfile( path ) and path[len(path)-5:] == ".flac":
-				name = os.path.basename(path)
-				folder = path.rstrip(name)
-				tardir = os.path.join(self.target, self.target_dir[pindex], folder.lstrip(os.path.join(self.base, self.base_dir[pindex])))
-				
-				#print name				
-
-				oput = os.path.join(tardir,name[:len(name)-5]+".ogg")
-				
-				# make the target directory if we need too
-				if not os.path.isdir( tardir ):
-					os.makedirs( tardir )
-				
-				if os.path.isfile( os.path.join(folder,"cover.jpg") ):
-					if not os.path.isfile( os.path.join(tardir,"cover.jpg") ):
-						shutil.copy2( os.path.join(folder,"cover.jpg"), os.path.join(tardir,"cover.jpg") )
-					self.target_file_set[0].add(os.path.join(tardir,"cover.jpg"))
-				elif os.path.isfile( os.path.join(folder,"cover.png") ):
-					if not os.path.isfile( os.path.join(tardir,"cover.png") ):
-						shutil.copy2( os.path.join(folder,"cover.png"), os.path.join(tardir,"cover.png") )
-					self.target_file_set[0].add(os.path.join(tardir,"cover.jpg"))
-				
-				if not os.path.isfile( oput ):
-					self.workers.apply_async( transcode, (path, oput, self.ogg_quality) )
-					#transcode( iput, oput, self.ogg_quality )
-				
-				self.target_file_set[0].add(oput)
-				
-			else:
-				for root, dirs, files in os.walk( path ):
-					for name in files:
-						if name[len(name)-5:] == ".flac":
-							tardir = os.path.join(self.target, self.target_dir[pindex], root.lstrip(os.path.join(self.base, self.base_dir[pindex])))
-							
-							iput = os.path.join(root,name)
-							oput = os.path.join(tardir,name[:len(name)-5]+".ogg")
-							
-							if not os.path.isdir( tardir ):
-								os.makedirs( tardir )
-							
-							if not os.path.isfile( oput ):
-								self.workers.apply_async( transcode, (iput, oput, self.ogg_quality) )
-								#transcode( iput, oput, self.ogg_quality )
-							
-							self.target_file_set[0].add(oput)
-							
-						elif name[:5] == "cover":
-							#print "in:  " +root+"/"+name
-							
-							tardir = os.path.join(self.target, self.target_dir[pindex], root.lstrip(os.path.join(self.base, self.base_dir[pindex])))
-							
-							if not os.path.isdir( tardir ):
-								os.makedirs( tardir )
-							
-							if not os.path.isfile( os.path.join(tardir,name) ):
-								shutil.copy2( os.path.join(root,name), os.path.join(tardir,name) )
-							
-							self.target_file_set[0].add(os.path.join(tardir,name))
-		
-		self.workers.close()
-		self.workers.join()
-		
-		self.clean_tree( pindex )
-
 	# cleans a directory tree
 	def clean_tree(self, pindex):
 		print "\n"
@@ -431,9 +370,7 @@ if __name__ == "__main__":
 		help="Creates a new blank profile. A profile contains all libraries, paths and settings for the application.")
 
 	args = ap.parse_args()
-	conn = sqlite3.connect("profile.db3")
-	
-	libs = Library.open_libraries(conn)
+	libs = Library.open_libraries()
 	settings = Settings.open()
 	Settings.save()
 
@@ -453,8 +390,11 @@ if __name__ == "__main__":
 	# list the available libraries
 	elif args.list_libraries:
 		print "Libraries\n"
-		for name, library in sorted(libs.iteritems()):
-			print library
+		# for name, library in sorted(libs.iteritems()):
+		# 	print library
+
+		for lib in Library.list_names():
+			print lib[0]
 
 		# not needed. just used for debugging. remove later
 		Library.save_libraries()
@@ -512,26 +452,34 @@ if __name__ == "__main__":
 		libs[name].cexts = []
 		Library.save_libraries()
 
+	# creates a new database profile. will delete the contents of an existing "profile.db3"!
 	elif args.create_profile:
-		conn.close()
+		db_connection.close()
 		fp = open("profile.db3", "rw+")
 		fp.truncate()
 		fp.close()
 		
-		conn = sqlite3.connect("profile.db3")
-		c = conn.cursor()
+		db_connection = sqlite3.connect("profile.db3")
+		c = db_connection.cursor()
 		c.execute("CREATE TABLE libraries \
 			(	id INTEGER, \
 				name TEXT, \
 				source TEXT, \
 				target TEXT, \
+				script_path TEXT, \
 				source_ext TEXT, \
 				target_ext TEXT, \
 				copy_ext TEXT,\
-			CONSTRAINT lib_id \
 				PRIMARY KEY (id))")
 
-		conn.commit()
+		c.execute("CREATE TABLE paths \
+			(	id INTEGER, \
+				lid INTEGER, \
+				path TEXT, \
+				PRIMARY KEY (id), \
+				FOREIGN KEY (lid) REFERENCES libraries(id))")
+
+		db_connection.commit()
 
 	# add a path to a library
 	elif args.add_path:
@@ -605,4 +553,4 @@ if __name__ == "__main__":
 		workers.close()
 		workers.join()
 
-	conn.close()
+	db_connection.close()
