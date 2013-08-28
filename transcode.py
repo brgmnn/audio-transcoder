@@ -14,7 +14,9 @@ def ssv_list(lst):
 		output.write(" ")
 	return output.getvalue().strip()
 
-# holds the global settings for the transcoder.
+#*		Settings
+#*	holds the global settings for the transcoder.
+#*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*#
 class Settings:
 	properties = dict()
 
@@ -37,11 +39,10 @@ class Settings:
 		except IOError:
 			print "Failed to save 'settings.json'."
 
-# handles each library of audio files.
+#*		Library
+#*	handles each library of audio files.
+#*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*#
 class Library:
-	libs = dict()
-
-	# SQL
 	def __init__(self, *args, **kwargs):
 		if len(args) == 1:
 			c = db_connection.cursor()
@@ -86,7 +87,7 @@ class Library:
 			+"  target ext  = "+self.exts[1]+"\n" \
 			+"  copy exts   = "+str(self.cexts);
 
-	# adds a path to the library - SQL
+	# adds a path to the library
 	def add_path(self, path):
 		path = os.path.abspath(self.check_path(path))
 
@@ -102,7 +103,7 @@ class Library:
 		db_connection.commit()
 		return 0
 
-	# remove a path from the library - SQL
+	# remove a path from the library
 	def remove_path(self, path):
 		path = os.path.abspath(self.check_path(path))
 
@@ -116,7 +117,7 @@ class Library:
 		db_connection.commit()
 		return 0
 
-	# removes all paths under a given root directory - SQL
+	# removes all paths under a given root directory
 	def remove_path_prefix(self, prefix):
 		prefix = os.path.abspath(self.check_path(prefix))
 
@@ -130,13 +131,13 @@ class Library:
 		db_connection.commit()
 		return 0
 
-	# sets the script path - SQL
+	# sets the script path
 	def set_script_path(self, path):
 		c = db_connection.cursor()
 		c.execute("UPDATE libraries SET script_path=? WHERE id=?", (path, self.id))
 		db_connection.commit()
 
-	# manipulate the extensions - SQL
+	# manipulate the extensions
 	def ext(self, *args, **kwargs):
 		c = db_connection.cursor()
 		if args[0] == "source":
@@ -158,20 +159,20 @@ class Library:
 			return
 		db_connection.commit()
 
-	# queries the database and returns all the paths associated with it - SQL
+	# queries the database and returns all the paths associated with it
 	def fetch_paths(self):
 		c = db_connection.cursor()
 		c.execute("SELECT path FROM paths WHERE lid=? ORDER BY path ASC", (self.id,))
 		self.paths = [p[0] for p in c.fetchall()]
 		return self.paths
 
-	# list the paths associated with this library - SQL
+	# list the paths associated with this library
 	def list_paths(self):
 		for path in self.fetch_paths():
 			print "  ",path
 		print "["+str(len(self.paths))+" total]"
 
-	# print the paths in a format that can be read in again using --import-paths - SQL
+	# print the paths in a format that can be read in again using --import-paths
 	def export_paths(self):
 		for path in self.fetch_paths():
 			print "~~/"+path
@@ -185,6 +186,9 @@ class Library:
 	# transcode everything that needs to be in the library
 	def transcode(self, workers):
 		seen = set()
+
+		self.items = 0;
+		self.current = 0;
 
 		for path in self.fetch_paths():
 			src = os.path.join(self.source, path)
@@ -231,6 +235,25 @@ class Library:
 								shutil.copy2(s,d)
 
 							seen.add(s)
+
+	# cleans the tree of unwanted files
+	def clean_tree(self):
+		for root, dirs, files in os.walk(self.target):
+			files = [os.path.join(root, f) for f in files]
+			valid = fnmatch.filter(files, "*"+self.exts[1])
+
+			for c in self.cexts:
+				valid.extend(fnmatch.filter(files, "*"+c))
+
+			rm_files = list(set(files) - set(valid))
+			for path in rm_files:
+				os.remove(path)
+
+	def write_progress(self):
+		sys.stdout.write("\rdone "+str(self.current)+" / "+str(self.items))
+		sys.stdout.flush()
+
+
 
 	# encodes the library to a json string
 	def json_encode(self):
@@ -298,24 +321,6 @@ class AudioTranscoder:
 				if not os.listdir(os.path.join(root, name)):
 					print "deleted: "+os.path.join(root, name)
 					os.rmdir(os.path.join(root, name))
-
-	def __init__(self):
-		self.base = "/home/daniel/Music/library/"
-		self.target = "/home/daniel/Music/transcode/"
-		
-		self.ogg_quality = 5
-		
-		self.base_dir = []
-		self.base_dir.append("artists.flac")
-		self.base_dir.append("compilations.flac")
-		
-		self.target_dir = []
-		self.target_dir.append("artists.ogg-q5")
-		self.target_dir.append("compilations.ogg-q5")
-		
-		self.target_file_set = []
-		self.target_file_set.append(Set([]))
-		self.target_file_set.append(Set([]))
 
 
 #	Main
@@ -413,11 +418,11 @@ if __name__ == "__main__":
 	settings = Settings.open()
 	Settings.save()
 
-	# add a library - SQL
+	# add a library
 	if args.add_library:
 		Library(args.add_library[0], args.add_library[1], args.add_library[2])
 
-	# remove a library - SQL
+	# remove a library
 	elif args.remove_library:
 		name = args.remove_library
 		Library.remove(name)
@@ -428,27 +433,27 @@ if __name__ == "__main__":
 		for name in Library.list_names():
 			print Library(name)
 
-	# change a libraries transcoder using the prebuilt transcoder settings - SQL
+	# change a libraries transcoder using the prebuilt transcoder settings
 	elif args.set_script:
 		name, path = args.set_script
 		Library(name).set_script_path(path)
 
-	# set the source file extensions - SQL
+	# set the source file extensions
 	elif args.set_source_ext:
 		name, ext = args.set_source_ext
 		Library(name).ext("source",ext)
 
-	# set the target file extensions - SQL
+	# set the target file extensions
 	elif args.set_target_ext:
 		name, ext = args.set_target_ext
 		Library(name).ext("target",ext)
 
-	# adds extensions to the copy list - SQL
+	# adds extensions to the copy list
 	elif args.add_copy_ext:
 		name, exts = args.add_copy_ext
 		Library(name).ext("copy",append=exts.replace(",", " "))
 
-	# clears the copy list for the library - SQL
+	# clears the copy list for the library
 	elif args.clear_copy_exts:
 		name = args.clear_copy_exts
 		Library(name).ext("copy",set="")
@@ -482,12 +487,12 @@ if __name__ == "__main__":
 
 		db_connection.commit()
 
-	# add a path to a library - SQL
+	# add a path to a library
 	elif args.add_path:
 		name, path = args.add_path
 		Library(name).add_path(path)
 
-	# import multiple paths from stdin - SQL
+	# import multiple paths from stdin
 	elif args.import_paths:
 		name = args.import_paths
 
@@ -495,22 +500,22 @@ if __name__ == "__main__":
 		for path in sys.stdin:
 			lib.add_path(path[:-1])
 
-	# export paths from a library - SQL
+	# export paths from a library
 	elif args.export_paths:
 		name = args.export_paths
 		Library(name).export_paths()
 
-	# remove a path from a library - SQL
+	# remove a path from a library
 	elif args.remove_path:
 		name, path = args.remove_path
 		Library(name).remove_path(path)
 
-	# remove paths from a library - SQL
+	# remove paths from a library
 	elif args.remove_path_prefix:
 		name, prefix = args.remove_path_prefix
 		Library(name).remove_path_prefix(prefix)
 
-	# list paths for a library - SQL
+	# list paths for a library
 	elif args.list_paths:
 		Library(args.list_paths).list_paths()
 
@@ -523,7 +528,9 @@ if __name__ == "__main__":
 		workers = []
 
 		for name in sorted(Library.list_names()):
-			Library(name).transcode(workers)
+			lib = Library(name)
+			lib.clean_tree()
+			lib.transcode(workers)
 
 		# workers.close()
 		# workers.join()
