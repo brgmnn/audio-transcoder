@@ -127,6 +127,12 @@ class Library:
 		db_connection.commit()
 		return 0
 
+	# sets the script path - SQL
+	def set_script_path(self, path):
+		c = db_connection.cursor()
+		c.execute("UPDATE libraries SET script_path=? WHERE id=?", (path, self.id))
+		db_connection.commit()
+
 	# queries the database and returns all the paths associated with it - SQL
 	def fetch_paths(self):
 		c = db_connection.cursor()
@@ -400,7 +406,6 @@ if __name__ == "__main__":
 		help="Creates a new blank profile. A profile contains all libraries, paths and settings for the application.")
 
 	args = ap.parse_args()
-	libs = Library.open_libraries()
 	settings = Settings.open()
 	Settings.save()
 
@@ -419,15 +424,10 @@ if __name__ == "__main__":
 		for name in Library.list_names():
 			print Library(name)
 
-	# change a libraries transcoder using the prebuilt transcoder settings
+	# change a libraries transcoder using the prebuilt transcoder settings - SQL
 	elif args.set_script:
 		name, path = args.set_script
-
-		if name not in libs:
-			sys.exit()
-
-		libs[name].script_path = path
-		Library.save_libraries()
+		Library(name).set_script_path(path)
 
 	# set the source file extensions
 	elif args.set_source_ext:
@@ -515,9 +515,6 @@ if __name__ == "__main__":
 	# import multiple paths from stdin - SQL
 	elif args.import_paths:
 		name = args.import_paths
-
-		if name not in libs:
-			sys.exit()
 
 		lib = Library(name)
 		for path in sys.stdin:
