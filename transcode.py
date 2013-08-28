@@ -37,45 +37,41 @@ class Library:
 	# exts = [".flac", ".ogg"]
 	# cexts = [".png", ".jpg", ".jpeg"]
 
-	def __init__(self, name):
-		c = db_connection.cursor()
-		c.execute("SELECT * FROM libraries WHERE name=?", (name,))
-		row = c.fetchone()
+	def __init__(self, *args, **kwargs):
+		if len(args) == 1:
+			c = db_connection.cursor()
+			c.execute("SELECT * FROM libraries WHERE name=?", (name,))
+			row = c.fetchone()
 
-		self.id = row[0]
-		self.name = row[1]
-		self.source = row[2]
-		self.target = row[3]
-		self.script_path = row[4]
-		self.exts = [row[5], row[6]]
-		self.cexts = row[7].split(" ")
-		self.paths = []
-
-	def __init__(self, name, source, target):
-		self.name = name
-		self.source = os.path.abspath(source)
-		self.target = os.path.abspath(target)
-		self.paths = []
-		self.script_path = Settings.properties["default_script_path"].encode('ascii', 'ignore')
-		self.exts = [e for e in Settings.properties["default_exts"]]
-		self.cexts = [e for e in Settings.properties["default_copy_exts"]]
-		
-		c = db_connection.cursor()
-		c.execute("INSERT INTO libraries VALUES (NULL,?,?,?,?,?,?,?)",
-			(	self.name,
-				self.source,
-				self.target,
-				self.script_path,
-				self.exts[0],
-				self.exts[1],
-				str(self.cexts))
-			)
-		db_connection.commit()
-
-		if name not in Library.libs:
-			Library.libs[name] = self
+			self.id = row[0]
+			self.name = row[1]
+			self.source = row[2]
+			self.target = row[3]
+			self.script_path = row[4]
+			self.exts = [row[5], row[6]]
+			self.cexts = row[7].split(" ")
+			self.paths = []
 		else:
-			sys.stderr.write("Could not add new library as another library of the same name already exists!")
+			# TODO: fix the storing of cexts
+			self.name = args[0]
+			self.source = os.path.abspath(args[1])
+			self.target = os.path.abspath(args[2])
+			self.paths = []
+			self.script_path = Settings.properties["default_script_path"].encode('ascii', 'ignore')
+			self.exts = [e for e in Settings.properties["default_exts"]]
+			self.cexts = [e for e in Settings.properties["default_copy_exts"]]
+			
+			c = db_connection.cursor()
+			c.execute("INSERT INTO libraries VALUES (NULL,?,?,?,?,?,?,?)",
+				(	self.name,
+					self.source,
+					self.target,
+					self.script_path,
+					self.exts[0],
+					self.exts[1],
+					str(self.cexts))
+				)
+			db_connection.commit()
 
 	def __str__(self):
 		return self.name+" ["+str(len(self.paths))+" paths]\n" \
@@ -86,7 +82,7 @@ class Library:
 			+"  target ext  = "+self.exts[1]+"\n" \
 			+"  copy exts   = "+str(self.cexts);
 
-	# adds a path to the library
+	# adds a path to the library - SQL
 	def add_path(self, path):
 		path = os.path.abspath(self.check_path(path))
 
@@ -96,23 +92,25 @@ class Library:
 			print path
 			return 1
 
-		relpath = os.path.relpath(path, self.source)
-		print relpath
-		print os.path.join(self.source, relpath)
-
-		libs[name].paths.append(relpath)
-		libs[name].paths.sort()
+		c = db_connection.cursor()
+		c.execute("INSERT INTO paths VALUES (NULL,?,?)", \
+			(self.id, os.path.relpath(path, self.source)))
+		db_connection.commit()
 		return 0
 
 	# remove a path from the library
 	def remove_path(self, path):
-		path = os.path.abspath(path)
+		path = os.path.abspath(self.check_path(path))
 
 		if not path.startswith(self.source):
+			print "Path not under root!"
 			return 1
 
-		relpath = os.path.relpath(path, self.source)
-		self.paths = [p for p in self.paths if p != relpath]
+		c = db_connection.cursor()
+		c.execute("DELETE FROM paths WHERE lid=? AND path=?", \
+			(self.id, os.path.relpath(path, self.source)))
+		db_connection.commit()
+
 		return 0
 
 	# removes all paths under a given root directory
@@ -126,6 +124,7 @@ class Library:
 		self.paths = [p for p in self.paths if not p.startswith(relprefix)]
 		return 0
 
+	# queries the database and returns all the paths associated with it
 	def paths(self):
 		c = db_connection.cursor()
 		c.execute("SELECT path FROM paths WHERE lid=? ORDER BY path ASC", (self.id,))
@@ -506,8 +505,9 @@ if __name__ == "__main__":
 		if name not in libs:
 			sys.exit()
 
-		libs[name].add_path(path)
-		Library.save_libraries()
+		Library(name).add_path(path)
+		# libs[name].add_path(path)
+		# Library.save_libraries()
 
 	# import multiple paths from stdin
 	elif args.import_paths:
@@ -537,8 +537,7 @@ if __name__ == "__main__":
 		if name not in libs:
 			sys.exit()
 
-		libs[name].remove_path(path)
-		Library.save_libraries()
+		Library(name).remove_path(path)
 
 	# remove paths from a library
 	elif args.remove_path_prefix:
