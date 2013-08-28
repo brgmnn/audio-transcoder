@@ -133,6 +133,19 @@ class Library:
 		c.execute("UPDATE libraries SET script_path=? WHERE id=?", (path, self.id))
 		db_connection.commit()
 
+	# manipulate the extensions
+	def ext(self, *args, **kwargs):
+		c = db_connection.cursor()
+		if args[0] == "source":
+			c.execute("UPDATE libraries SET source_ext=? WHERE id=?", (args[1], self.id))
+		elif args[0] == "target":
+			c.execute("UPDATE libraries SET target_ext=? WHERE id=?", (args[1], self.id))
+		elif args[0] == "copy":
+			pass
+		else:
+			return
+		db_connection.commit()
+
 	# queries the database and returns all the paths associated with it - SQL
 	def fetch_paths(self):
 		c = db_connection.cursor()
@@ -429,25 +442,16 @@ if __name__ == "__main__":
 		name, path = args.set_script
 		Library(name).set_script_path(path)
 
-	# set the source file extensions
+	# set the source file extensions - SQL
 	elif args.set_source_ext:
 		name, ext = args.set_source_ext
+		Library(name).ext("source",ext)
+		# Library(name).ext("copy",append=ext)
 
-		if name not in libs:
-			sys.exit()
-
-		libs[name].exts[0] = ext
-		Library.save_libraries()
-
-	# set the target file extensions
+	# set the target file extensions - SQL
 	elif args.set_target_ext:
 		name, ext = args.set_target_ext
-
-		if name not in libs:
-			sys.exit()
-
-		libs[name].exts[1] = ext
-		Library.save_libraries()
+		Library(name).ext("target",ext)
 
 	# adds extensions to the copy list
 	elif args.add_copy_ext:
