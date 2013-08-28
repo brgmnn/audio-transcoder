@@ -239,6 +239,7 @@ class Library:
 	# cleans the tree of unwanted files
 	def clean_tree(self):
 		for root, dirs, files in os.walk(self.target):
+			dirs = [os.path.join(root, d) for d in dirs]
 			files = [os.path.join(root, f) for f in files]
 			valid = fnmatch.filter(files, "*"+self.exts[1])
 
@@ -248,6 +249,12 @@ class Library:
 			rm_files = list(set(files) - set(valid))
 			for path in rm_files:
 				os.remove(path)
+
+			for d in dirs:
+				try:
+					os.rmdir(d)
+				except OSError as ex:
+					pass
 
 	def write_progress(self):
 		sys.stdout.write("\rdone "+str(self.current)+" / "+str(self.items))
