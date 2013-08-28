@@ -37,6 +37,7 @@ class Library:
 	# exts = [".flac", ".ogg"]
 	# cexts = [".png", ".jpg", ".jpeg"]
 
+	# SQL
 	def __init__(self, *args, **kwargs):
 		if len(args) == 1:
 			c = db_connection.cursor()
@@ -98,7 +99,7 @@ class Library:
 		db_connection.commit()
 		return 0
 
-	# remove a path from the library
+	# remove a path from the library - SQL
 	def remove_path(self, path):
 		path = os.path.abspath(self.check_path(path))
 
@@ -110,36 +111,38 @@ class Library:
 		c.execute("DELETE FROM paths WHERE lid=? AND path=?", \
 			(self.id, os.path.relpath(path, self.source)))
 		db_connection.commit()
-
 		return 0
 
-	# removes all paths under a given root directory
+	# removes all paths under a given root directory - SQL
 	def remove_path_prefix(self, prefix):
-		prefix = os.path.abspath(prefix)
+		prefix = os.path.abspath(self.check_path(prefix))
 
 		if not prefix.startswith(self.source):
+			print "Path not under root!"
 			return 1
 
-		relprefix = os.path.relpath(prefix, self.source)
-		self.paths = [p for p in self.paths if not p.startswith(relprefix)]
+		c = db_connection.cursor()
+		c.execute("DELETE FROM paths WHERE lid=? AND path LIKE ?", \
+			(self.id, os.path.relpath(prefix, self.source)+"%") )
+		db_connection.commit()
 		return 0
 
-	# queries the database and returns all the paths associated with it
-	def paths(self):
+	# queries the database and returns all the paths associated with it - SQL
+	def fetch_paths(self):
 		c = db_connection.cursor()
 		c.execute("SELECT path FROM paths WHERE lid=? ORDER BY path ASC", (self.id,))
-		self.paths = c.fetchall()
+		self.paths = [p[0] for p in c.fetchall()]
 		return self.paths
 
-	# list the paths associated with this library
+	# list the paths associated with this library - SQL
 	def list_paths(self):
-		for path in self.paths:
+		for path in self.fetch_paths():
 			print "  ",path
 		print "["+str(len(self.paths))+" total]"
 
-	# print the paths in a format that can be read in again using --import-paths
+	# print the paths in a format that can be read in again using --import-paths - SQL
 	def export_paths(self):
-		for path in self.paths:
+		for path in self.fetch_paths():
 			print "~~/"+path
 
 	# checks a directory and optionally places in the libraries source dir
@@ -498,7 +501,7 @@ if __name__ == "__main__":
 
 		db_connection.commit()
 
-	# add a path to a library
+	# add a path to a library - SQL
 	elif args.add_path:
 		name, path = args.add_path
 		
@@ -509,28 +512,27 @@ if __name__ == "__main__":
 		# libs[name].add_path(path)
 		# Library.save_libraries()
 
-	# import multiple paths from stdin
+	# import multiple paths from stdin - SQL
 	elif args.import_paths:
 		name = args.import_paths
 
 		if name not in libs:
 			sys.exit()
 
+		lib = Library(name)
 		for path in sys.stdin:
-			libs[name].add_path(path[:-1])
+			lib.add_path(path[:-1])
 
-		Library.save_libraries()
-
-	# export paths from a library
+	# export paths from a library - SQL
 	elif args.export_paths:
 		name = args.export_paths
 
 		if name not in libs:
 			sys.exit()
 
-		libs[name].export_paths()
+		Library(name).export_paths()
 
-	# remove a path from a library
+	# remove a path from a library - SQL
 	elif args.remove_path:
 		name, path = args.remove_path
 
@@ -539,15 +541,14 @@ if __name__ == "__main__":
 
 		Library(name).remove_path(path)
 
-	# remove paths from a library
+	# remove paths from a library - SQL
 	elif args.remove_path_prefix:
 		name, prefix = args.remove_path_prefix
 
 		if name not in libs:
 			sys.exit()
 
-		libs[name].remove_path_prefix(prefix)
-		Library.save_libraries()
+		Library(name).remove_path_prefix(prefix)
 
 	# list paths for a library
 	elif args.list_paths:
