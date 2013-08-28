@@ -144,11 +144,16 @@ class Library:
 		elif args[0] == "target":
 			c.execute("UPDATE libraries SET target_ext=? WHERE id=?", (args[1], self.id))
 		elif args[0] == "copy":
-			if kwargs["append"]:
+			if "append" in kwargs:
 				new_cexts = list(self.cexts)
 				new_cexts.extend(kwargs["append"].split())
+				new_cexts = list(set(new_cexts))
+				new_cexts.sort()
 				c.execute("UPDATE libraries SET copy_ext=? WHERE id=?", \
 					(ssv_list(new_cexts), self.id))
+			elif "set" in kwargs:
+				c.execute("UPDATE libraries SET copy_ext=? WHERE id=?", \
+					(ssv_list(kwargs["set"]), self.id))
 		else:
 			return
 		db_connection.commit()
@@ -460,22 +465,15 @@ if __name__ == "__main__":
 		name, ext = args.set_target_ext
 		Library(name).ext("target",ext)
 
-	# adds extensions to the copy list
+	# adds extensions to the copy list - SQL
 	elif args.add_copy_ext:
 		name, exts = args.add_copy_ext
 		Library(name).ext("copy",append=exts.replace(",", " "))
 
-	# clears the copy list for the library
+	# clears the copy list for the library - SQL
 	elif args.clear_copy_exts:
-		name = args.add_copy_ext
-
-		if name not in libs:
-			sys.exit()
-
-		# libs[name].cexts.pop()
-		# libs[name].exts = [libs[name].exts[0], libs[name].exts[1], []]
-		libs[name].cexts = []
-		Library.save_libraries()
+		name = args.clear_copy_exts
+		Library(name).ext("copy",set="")
 
 	# creates a new database profile. will delete the contents of an existing "profile.db3"!
 	elif args.create_profile:
@@ -540,7 +538,7 @@ if __name__ == "__main__":
 		name, prefix = args.remove_path_prefix
 		Library(name).remove_path_prefix(prefix)
 
-	# list paths for a library
+	# list paths for a library - SQL
 	elif args.list_paths:
 		Library(args.list_paths).list_paths()
 
