@@ -41,7 +41,7 @@ class Library:
 	def __init__(self, *args, **kwargs):
 		if len(args) == 1:
 			c = db_connection.cursor()
-			c.execute("SELECT * FROM libraries WHERE name=?", (name,))
+			c.execute("SELECT * FROM libraries WHERE name=?", (args[0],))
 			row = c.fetchone()
 
 			self.id = row[0]
@@ -552,10 +552,7 @@ if __name__ == "__main__":
 
 	# list paths for a library
 	elif args.list_paths:
-		if args.list_paths in libs:
-			libs[args.list_paths].list_paths()
-		else:
-			print "Could not find library",args.list_paths
+		Library(args.list_paths).list_paths()
 
 	# transcode anything that's missing
 	else:
