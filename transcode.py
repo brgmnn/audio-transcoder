@@ -186,7 +186,7 @@ class Library:
 	def transcode(self, workers):
 		seen = set()
 
-		for path in self.paths:
+		for path in self.fetch_paths():
 			src = os.path.join(self.source, path)
 
 			if os.path.isfile(src) and src not in seen:
@@ -197,8 +197,8 @@ class Library:
 					if not os.path.isdir(os.path.dirname(dst)):
 						os.makedirs(os.path.dirname(dst))
 					
-					# transcode_worker(self.script_path, src, dst)
-					workers.apply_async(transcode_worker, (self.script_path, src, dst))
+					transcode_worker(self.script_path, src, dst)
+					# workers.apply_async(transcode_worker, (self.script_path, src, dst))
 				else:
 					if not os.path.isdir(os.path.dirname(dst)):
 						os.makedirs(os.path.dirname(dst))
@@ -223,8 +223,8 @@ class Library:
 								if not os.path.isdir(os.path.dirname(d)):
 									os.makedirs(os.path.dirname(d))
 								
-								# transcode_worker(self.script_path, s, d)
-								workers.apply_async(transcode_worker, (self.script_path, s, d))
+								transcode_worker(self.script_path, s, d)
+								# workers.apply_async(transcode_worker, (self.script_path, s, d))
 							else:
 								if not os.path.isdir(os.path.dirname(d)):
 									os.makedirs(os.path.dirname(d))
@@ -254,27 +254,6 @@ class Library:
 		self.script_path = d["script_path"]
 		self.exts = d["exts"]
 		self.cexts = d["cexts"]
-
-	# open a libraries file
-	@staticmethod
-	def open_libraries():
-		try:
-			Library.libs = pickle.load(open("libraries.p", "rb"))
-
-			# Settings.properties = json.loads(open("settings.json", "rb").read())
-
-		except IOError:
-			print "Failed to open libraries file. Attempting to create a new file..."
-			Library.save_libraries()
-		return Library.libs
-
-	# saves libraries to disk
-	@staticmethod
-	def save_libraries():
-		try:
-			pickle.dump(Library.libs, open("libraries.p", "wb"))
-		except IOError:
-			print "Failed to save libraries!"
 
 	# lists the names of all the libraries
 	@staticmethod
@@ -458,7 +437,6 @@ if __name__ == "__main__":
 	elif args.set_source_ext:
 		name, ext = args.set_source_ext
 		Library(name).ext("source",ext)
-		# Library(name).ext("copy",append=ext)
 
 	# set the target file extensions - SQL
 	elif args.set_target_ext:
@@ -507,13 +485,7 @@ if __name__ == "__main__":
 	# add a path to a library - SQL
 	elif args.add_path:
 		name, path = args.add_path
-		
-		if name not in libs:
-			sys.exit()
-
 		Library(name).add_path(path)
-		# libs[name].add_path(path)
-		# Library.save_libraries()
 
 	# import multiple paths from stdin - SQL
 	elif args.import_paths:
@@ -547,13 +519,13 @@ if __name__ == "__main__":
 		print "--- Audio Transcoder ---"
 		print "  Workers: "+str(mp.cpu_count())
 
-		workers = mp.Pool()
-		# workers = []
+		# workers = mp.Pool()
+		workers = []
 
-		for name, library in sorted(libs.iteritems()):
-			library.transcode(workers)
+		for name in sorted(Library.list_names()):
+			Library(name).transcode(workers)
 
-		workers.close()
-		workers.join()
+		# workers.close()
+		# workers.join()
 
 	db_connection.close()
