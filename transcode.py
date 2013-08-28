@@ -42,6 +42,7 @@ class Library:
 		c.execute("SELECT * FROM libraries WHERE name=?", (name,))
 		row = c.fetchone()
 
+		self.id = row[0]
 		self.name = row[1]
 		self.source = row[2]
 		self.target = row[3]
@@ -56,10 +57,20 @@ class Library:
 		self.target = os.path.abspath(target)
 		self.paths = []
 		self.script_path = Settings.properties["default_script_path"].encode('ascii', 'ignore')
-		self.exts = [e.encode('ascii', 'ignore') for e in Settings.properties["default_exts"]]
-		self.cexts = [e.encode('ascii', 'ignore') for e in Settings.properties["default_copy_exts"]]
-		# self.exts = list(Settings.properties["default_exts"]).encode('ascii', 'ignore')
-		# self.cexts = list(Settings.properties["default_copy_exts"]).encode('ascii', 'ignore')
+		self.exts = [e for e in Settings.properties["default_exts"]]
+		self.cexts = [e for e in Settings.properties["default_copy_exts"]]
+		
+		c = db_connection.cursor()
+		c.execute("INSERT INTO libraries VALUES (NULL,?,?,?,?,?,?,?)",
+			(	self.name,
+				self.source,
+				self.target,
+				self.script_path,
+				self.exts[0],
+				self.exts[1],
+				str(self.cexts))
+			)
+		db_connection.commit()
 
 		if name not in Library.libs:
 			Library.libs[name] = self
@@ -114,6 +125,12 @@ class Library:
 		relprefix = os.path.relpath(prefix, self.source)
 		self.paths = [p for p in self.paths if not p.startswith(relprefix)]
 		return 0
+
+	def paths(self):
+		c = db_connection.cursor()
+		c.execute("SELECT path FROM paths WHERE lid=? ORDER BY path ASC", (self.id,))
+		self.paths = c.fetchall()
+		return self.paths
 
 	# list the paths associated with this library
 	def list_paths(self):
@@ -389,10 +406,11 @@ if __name__ == "__main__":
 
 	# list the available libraries
 	elif args.list_libraries:
-		print "Libraries\n"
-		# for name, library in sorted(libs.iteritems()):
-		# 	print library
+		print "  Libraries"
+		for name, library in sorted(libs.iteritems()):
+			print library
 
+		print "\n  SQL Libraries"
 		for lib in Library.list_names():
 			print lib[0]
 
@@ -462,21 +480,21 @@ if __name__ == "__main__":
 		db_connection = sqlite3.connect("profile.db3")
 		c = db_connection.cursor()
 		c.execute("CREATE TABLE libraries \
-			(	id INTEGER, \
+			(	id INTEGER PRIMARY KEY, \
 				name TEXT, \
 				source TEXT, \
 				target TEXT, \
 				script_path TEXT, \
 				source_ext TEXT, \
 				target_ext TEXT, \
-				copy_ext TEXT,\
-				PRIMARY KEY (id))")
+				copy_ext TEXT, \
+				UNIQUE (name))")
 
 		c.execute("CREATE TABLE paths \
-			(	id INTEGER, \
+			(	id INTEGER PRIMARY KEY, \
 				lid INTEGER, \
 				path TEXT, \
-				PRIMARY KEY (id), \
+				UNIQUE (lid, path) \
 				FOREIGN KEY (lid) REFERENCES libraries(id))")
 
 		db_connection.commit()
