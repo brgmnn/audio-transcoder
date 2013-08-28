@@ -40,10 +40,6 @@ class Settings:
 # handles each library of audio files.
 class Library:
 	libs = dict()
-	# encoder_path = "encoders/ogg-q5.sh"
-	# script_path = "encoders/skip.sh"
-	# exts = [".flac", ".ogg"]
-	# cexts = [".png", ".jpg", ".jpeg"]
 
 	# SQL
 	def __init__(self, *args, **kwargs):
@@ -140,7 +136,7 @@ class Library:
 		c.execute("UPDATE libraries SET script_path=? WHERE id=?", (path, self.id))
 		db_connection.commit()
 
-	# manipulate the extensions
+	# manipulate the extensions - SQL
 	def ext(self, *args, **kwargs):
 		c = db_connection.cursor()
 		if args[0] == "source":
@@ -148,7 +144,11 @@ class Library:
 		elif args[0] == "target":
 			c.execute("UPDATE libraries SET target_ext=? WHERE id=?", (args[1], self.id))
 		elif args[0] == "copy":
-			pass
+			if kwargs["append"]:
+				new_cexts = list(self.cexts)
+				new_cexts.extend(kwargs["append"].split())
+				c.execute("UPDATE libraries SET copy_ext=? WHERE id=?", \
+					(ssv_list(new_cexts), self.id))
 		else:
 			return
 		db_connection.commit()
@@ -295,8 +295,6 @@ def transcode_worker(script_path, src, dst):
 	p = subprocess.Popen([script_path,src,dst], stdout=devnull, stderr=devnull)
 	p.wait()
 	print "job done: "+dst
-
-
 
 class AudioTranscoder:
 	# cleans a directory tree
@@ -465,13 +463,7 @@ if __name__ == "__main__":
 	# adds extensions to the copy list
 	elif args.add_copy_ext:
 		name, exts = args.add_copy_ext
-
-		if name not in libs:
-			sys.exit()
-
-		libs[name].cexts.extend(exts.replace(",", " ").split())
-		libs[name].cexts.sort()
-		Library.save_libraries()
+		Library(name).ext("copy",append=exts.replace(",", " "))
 
 	# clears the copy list for the library
 	elif args.clear_copy_exts:
