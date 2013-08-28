@@ -245,12 +245,23 @@ class Library:
 		except IOError:
 			print "Failed to save libraries!"
 
+	# lists the names of all the libraries
 	@staticmethod
 	def list_names():
 		c = db_connection.cursor()
 		c.execute("SELECT name FROM libraries ORDER BY name ASC")
 		return c.fetchall()
 
+	# removes a library given its name
+	@staticmethod
+	def remove(name):
+		c = db_connection.cursor()
+		c.execute("SELECT id FROM libraries WHERE name=?", (name,))
+		lid = c.fetchone()[0]
+
+		c.execute("DELETE FROM libraries WHERE name=?", (name,))
+		c.execute("DELETE FROM paths WHERE lid=?", (lid,))
+		db_connection.commit()
 
 # worker thread to transcode a single item
 def transcode_worker(script_path, src, dst):
@@ -393,18 +404,14 @@ if __name__ == "__main__":
 	settings = Settings.open()
 	Settings.save()
 
-	# add a library
+	# add a library - SQL
 	if args.add_library:
 		Library(args.add_library[0], args.add_library[1], args.add_library[2])
-		Library.save_libraries()
 
 	# remove a library
 	elif args.remove_library:
 		name = args.remove_library
-
-		if name in libs:
-			del libs[name]
-			Library.save_libraries()
+		Library.remove(name)
 
 	# list the available libraries
 	elif args.list_libraries:
