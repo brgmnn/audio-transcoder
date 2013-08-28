@@ -1,10 +1,18 @@
 #!/usr/bin/env python
 
-import multiprocessing as mp, os, shutil, subprocess, sys, time, argparse, pickle
+import multiprocessing as mp, os, shutil, subprocess, sys, time, argparse, pickle, StringIO
 import fnmatch, re, json, sqlite3
 from sets import Set
 
 db_connection = sqlite3.connect("profile.db3")
+
+# space separate variable list
+def ssv_list(lst):
+	output = StringIO.StringIO()
+	for item in lst:
+		output.write(item)
+		output.write(" ")
+	return output.getvalue().strip()
 
 # holds the global settings for the transcoder.
 class Settings:
@@ -53,7 +61,6 @@ class Library:
 			self.cexts = row[7].split(" ")
 			self.paths = []
 		else:
-			# TODO: fix the storing of cexts
 			self.name = args[0]
 			self.source = os.path.abspath(args[1])
 			self.target = os.path.abspath(args[2])
@@ -70,7 +77,7 @@ class Library:
 					self.script_path,
 					self.exts[0],
 					self.exts[1],
-					str(self.cexts))
+					ssv_list(self.cexts) )
 				)
 			db_connection.commit()
 
@@ -288,6 +295,8 @@ def transcode_worker(script_path, src, dst):
 	p = subprocess.Popen([script_path,src,dst], stdout=devnull, stderr=devnull)
 	p.wait()
 	print "job done: "+dst
+
+
 
 class AudioTranscoder:
 	# cleans a directory tree
@@ -527,28 +536,16 @@ if __name__ == "__main__":
 	# export paths from a library - SQL
 	elif args.export_paths:
 		name = args.export_paths
-
-		if name not in libs:
-			sys.exit()
-
 		Library(name).export_paths()
 
 	# remove a path from a library - SQL
 	elif args.remove_path:
 		name, path = args.remove_path
-
-		if name not in libs:
-			sys.exit()
-
 		Library(name).remove_path(path)
 
 	# remove paths from a library - SQL
 	elif args.remove_path_prefix:
 		name, prefix = args.remove_path_prefix
-
-		if name not in libs:
-			sys.exit()
-
 		Library(name).remove_path_prefix(prefix)
 
 	# list paths for a library
