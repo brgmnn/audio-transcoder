@@ -9,6 +9,5 @@
         ".flac",
         ".ogg"
     ],
-    "default_script_path": "encoders/skip.sh",
-    "name": "hello world"
+    "default_script_path": "encoders/skip.sh"
 }
