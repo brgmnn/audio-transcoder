@@ -26,11 +26,8 @@ class Settings:
 			defaults = json.load(open("default-settings.json", "rb"))
 			values = json.load(open("settings.json", "rb"))
 			Settings.properties = dict(defaults.items() + values.items())
-			# Settings.properties["multithreaded"] = dict();
-			# Settings.properties["multithreaded"]["active"] = True
-			# Settings.properties["multithreaded"]["cores"] = -1
 		except IOError:
-			print "Failed to open 'settings.json'. Attempting to create it now..."
+			print "Failed to open one of the settings files. Attempting to create it now..."
 			Settings.save()
 		return Settings.properties
 
@@ -42,7 +39,7 @@ class Settings:
 				json.dumps(Settings.properties, sort_keys=True, indent=4,\
 					separators=(',', ': ')))
 		except IOError:
-			print "Failed to save 'settings.json'."
+			print "Failed to save settings."
 
 #*		Library
 #*	handles each library of audio files.
@@ -206,8 +203,10 @@ class Library:
 					if not os.path.isdir(os.path.dirname(dst)):
 						os.makedirs(os.path.dirname(dst))
 					
-					transcode_worker(self.script_path, src, dst)
-					# workers.apply_async(transcode_worker, (self.script_path, src, dst))
+					if Settings.properties["multithreaded"]:
+						workers.apply_async(transcode_worker, (self.script_path, src, dst))
+					else:
+						transcode_worker(self.script_path, src, dst)
 				else:
 					if not os.path.isdir(os.path.dirname(dst)):
 						os.makedirs(os.path.dirname(dst))
@@ -232,8 +231,10 @@ class Library:
 								if not os.path.isdir(os.path.dirname(d)):
 									os.makedirs(os.path.dirname(d))
 								
-								transcode_worker(self.script_path, s, d)
-								# workers.apply_async(transcode_worker, (self.script_path, s, d))
+								if Settings.properties["multithreaded"]:
+									workers.apply_async(transcode_worker, (self.script_path, s, d))
+								else:
+									transcode_worker(self.script_path, s, d)
 							else:
 								if not os.path.isdir(os.path.dirname(d)):
 									os.makedirs(os.path.dirname(d))
@@ -513,15 +514,20 @@ if __name__ == "__main__":
 		print "--- Audio Transcoder ---"
 		print "  Workers: "+str(mp.cpu_count())
 
-		# workers = mp.Pool()
 		workers = []
+		if Settings.properties["multithreaded"]:
+			if Settings.properties["cores"] > 1:
+				workers = mp.Pool(Settings.properties["cores"])
+			else:
+				workers = mp.Pool()
 
 		for name in sorted(Library.list_names()):
 			lib = Library(name)
 			lib.clean_tree()
 			lib.transcode(workers)
 
-		# workers.close()
-		# workers.join()
+		if Settings.properties["multithreaded"]:
+			workers.close()
+			workers.join()
 
 	db_connection.close()
