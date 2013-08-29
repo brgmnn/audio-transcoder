@@ -23,7 +23,12 @@ class Settings:
 	@staticmethod
 	def open():
 		try:
-			Settings.properties = json.loads(open("settings.json", "rb").read())
+			defaults = json.load(open("default-settings.json", "rb"))
+			values = json.load(open("settings.json", "rb"))
+			Settings.properties = dict(defaults.items() + values.items())
+			# Settings.properties["multithreaded"] = dict();
+			# Settings.properties["multithreaded"]["active"] = True
+			# Settings.properties["multithreaded"]["cores"] = -1
 		except IOError:
 			print "Failed to open 'settings.json'. Attempting to create it now..."
 			Settings.save()
@@ -33,7 +38,7 @@ class Settings:
 	def save():
 		try:
 			Settings.properties["default_copy_exts"].sort()
-			open("settings.json", "wb").write(\
+			open("composite.json", "wb").write(\
 				json.dumps(Settings.properties, sort_keys=True, indent=4,\
 					separators=(',', ': ')))
 		except IOError:
@@ -401,7 +406,6 @@ if __name__ == "__main__":
 
 	args = ap.parse_args()
 	settings = Settings.open()
-	Settings.save()
 
 	# add a library
 	if args.add_library:

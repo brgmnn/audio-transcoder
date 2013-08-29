@@ -1,13 +1,8 @@
 {
-    "default_copy_exts": [
-        "cover.bmp",
-        "cover.jpeg",
-        "cover.jpg",
-        "cover.png"
-    ],
     "default_exts": [
         ".flac",
         ".ogg"
     ],
-    "default_script_path": "encoders/skip.sh"
+    "default_script_path": "encoders/skip.sh",
+    "multithreaded": false
 }
