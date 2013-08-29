@@ -260,8 +260,6 @@ class Library:
 		sys.stdout.write("\rdone "+str(self.current)+" / "+str(self.items))
 		sys.stdout.flush()
 
-
-
 	# encodes the library to a json string
 	def json_encode(self):
 		d = dict()
@@ -309,26 +307,6 @@ def transcode_worker(script_path, src, dst):
 	p = subprocess.Popen([script_path,src,dst], stdout=devnull, stderr=devnull)
 	p.wait()
 	print "job done: "+dst
-
-class AudioTranscoder:
-	# cleans a directory tree
-	def clean_tree(self, pindex):
-		print "\n"
-		print "    Cleaning unwanted files..."
-		for root, dirs, files in os.walk(os.path.join(self.target,self.target_dir[pindex]), topdown=False):
-			for name in files:
-				if os.path.join(root,name) not in self.target_file_set[0]:
-					ext = os.path.splitext(name)[1]
-
-					if ext != ".png" and ext != ".jpg" and ext != ".jpeg":
-						os.remove(os.path.join(root, name))
-						print "deleted: "+os.path.join(root, name)
-
-			for name in dirs:
-				if not os.listdir(os.path.join(root, name)):
-					print "deleted: "+os.path.join(root, name)
-					os.rmdir(os.path.join(root, name))
-
 
 #	Main
 # ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
