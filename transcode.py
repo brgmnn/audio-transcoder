@@ -350,6 +350,22 @@ def cmd_library(args):
 		# set script path
 		name, path = args.script
 		Library(name).set_script_path(path)
+	elif args.source_ext:
+		# set source extension
+		name, ext = args.source_ext
+		Library(name).ext("source",ext)
+	elif args.target_ext:
+		# set target extension
+		name, ext = args.target_ext
+		Library(name).ext("target",ext)
+	elif args.add_copy:
+		# add copy extension
+		name, exts = args.add_copy
+		Library(name).ext("copy",append=exts.replace(",", " "))
+	elif args.clear_copy:
+		# remove all copy extensions
+		name = args.clear_copy
+		Library(name).ext("copy",set="")
 
 #	Main
 # ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
@@ -386,28 +402,27 @@ if __name__ == "__main__":
 		dest="script",
 		metavar=("LIBRARY", "PATH"),
 		help="Set the transcoding script path for a library.")
-
-	ap.add_argument("--set-source-extension", "-sse",
+	p_library.add_argument("--source-ext", "-se",
 		nargs=2,
 		type=str,
-		dest="set_source_ext",
+		dest="source_ext",
 		metavar=("LIBRARY", "EXTENSION"),
 		help="Set the source file extension. This should include the preceeding period. Example: for FLAC source audio files, set this extension to '.flac'")
-	ap.add_argument("--set-target-extension", "-ste",
+	p_library.add_argument("--target-ext", "-te",
 		nargs=2,
 		type=str,
-		dest="set_target_ext",
+		dest="target_ext",
 		metavar=("LIBRARY", "EXTENSION"),
 		help="Set the target output file extension. This should include the preceeding period. Example: for MP3 output files, set this extension to '.mp3'")
-	ap.add_argument("--add-copy-extension", "-ace",
+	p_library.add_argument("--add-copy-ext", "-ace",
 		nargs=2,
 		type=str,
-		dest="add_copy_ext",
+		dest="add_copy",
 		metavar=("LIBRARY", "EXTENSION(S)"),
 		help="Add copy extensions. Multiple extensions can be specified, separated by a comma. Copy extensions are a list of file extensions which files are to be copied over from the source to target tree. This could be used to copy image files so that album art is transfered over to the target directory.")
-	ap.add_argument("--clear-copy-extensions", "-cce",
+	p_library.add_argument("--clear-copy-ext", "-cce",
 		type=str,
-		dest="clear_copy_exts",
+		dest="clear_copy",
 		metavar="LIBRARY",
 		help="Clears the copy extension list for a library. After calling this command no files will be copied over from the source to target tree.")
 
@@ -458,28 +473,8 @@ if __name__ == "__main__":
 	commands[args.cmd](args)
 	sys.exit(0)
 
-	# set the source file extensions
-	if args.set_source_ext:
-		name, ext = args.set_source_ext
-		Library(name).ext("source",ext)
-
-	# set the target file extensions
-	elif args.set_target_ext:
-		name, ext = args.set_target_ext
-		Library(name).ext("target",ext)
-
-	# adds extensions to the copy list
-	elif args.add_copy_ext:
-		name, exts = args.add_copy_ext
-		Library(name).ext("copy",append=exts.replace(",", " "))
-
-	# clears the copy list for the library
-	elif args.clear_copy_exts:
-		name = args.clear_copy_exts
-		Library(name).ext("copy",set="")
-
 	# creates a new database profile. will delete the contents of an existing "profile.db3"!
-	elif args.create_profile:
+	if args.create_profile:
 		db_connection.close()
 		fp = open("profile.db3", "rw+")
 		fp.truncate()
