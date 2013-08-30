@@ -85,7 +85,6 @@ class Library:
 				)
 			c.execute("SELECT id FROM libraries WHERE name=?", (self.name,))
 			self.id = c.fetchone()["id"]
-			print self.id
 			db_connection.commit()
 
 	def __str__(self):
@@ -341,7 +340,12 @@ def cmd_list(args):
 			print Library(name)
 
 def cmd_library(args):
-	pass
+	if args.new:
+		# add a library
+		Library(args.new[0], args.new[1], args.new[2])
+	elif args.delete:
+		# deletes a library
+		Library.remove(args.delete)
 
 #	Main
 # ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
@@ -349,6 +353,7 @@ if __name__ == "__main__":
 	ap = argparse.ArgumentParser(description="Batch transcoding of audio files")
 	subparsers = ap.add_subparsers()
 
+	# list - prints out lists of things
 	p_list = subparsers.add_parser("list", help="List different things")
 	p_list.set_defaults(cmd="list")
 	p_list.add_argument("--paths", "-p",
@@ -357,25 +362,21 @@ if __name__ == "__main__":
 		metavar="LIBRARY",
 		help="Lists the paths being watched under a specified library.")
 
+	# library - configure libraries
 	p_library = subparsers.add_parser("library", help="Configure libraries.")
 	p_library.set_defaults(cmd="library")
-
-
-	# library operations
-	ap.add_argument("--add-library", "-al",
+	p_library.add_argument("--new", "-n",
 		nargs=3,
 		type=str,
-		dest="add_library",
+		dest="new",
 		metavar=("NAME", "SOURCE", "DESTINATION"),
-		help="Add a library directory to the libraries list.")
-	ap.add_argument("--remove-library", "-rl",
+		help="Creates a new library with source and destination root paths.")
+	p_library.add_argument("--delete", "-d",
 		type=str,
-		dest="remove_library",
+		dest="delete",
 		metavar="NAME",
-		help="Removes a library given the library name. This will delete the library and its associated paths.")
-	ap.add_argument("--list-libraries", "-ll",
-		action="store_true",
-		help="Lists the library directories that are scanned for audio files.")
+		help="Delete a library and its associated paths.")
+
 	ap.add_argument("--set-script-path", "-ssp",
 		nargs=2,
 		type=str,
@@ -446,24 +447,15 @@ if __name__ == "__main__":
 	settings = Settings.open()
 
 	commands = {
-		"transcode": cmd_transcode,
 		"library": cmd_library,
-		"list": cmd_list
+		"list": cmd_list,
+		"transcode": cmd_transcode
 	}
 	commands[args.cmd](args)
 	sys.exit(0)
 
-	# add a library
-	if args.add_library:
-		Library(args.add_library[0], args.add_library[1], args.add_library[2])
-
-	# remove a library
-	elif args.remove_library:
-		name = args.remove_library
-		Library.remove(name)
-
 	# change a libraries transcoder using the prebuilt transcoder settings
-	elif args.set_script:
+	if args.set_script:
 		name, path = args.set_script
 		Library(name).set_script_path(path)
 
