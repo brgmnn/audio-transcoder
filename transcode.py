@@ -346,6 +346,10 @@ def cmd_library(args):
 	elif args.delete:
 		# deletes a library
 		Library.remove(args.delete)
+	elif args.script:
+		# set script path
+		name, path = args.script
+		Library(name).set_script_path(path)
 
 #	Main
 # ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
@@ -376,13 +380,13 @@ if __name__ == "__main__":
 		dest="delete",
 		metavar="NAME",
 		help="Delete a library and its associated paths.")
-
-	ap.add_argument("--set-script-path", "-ssp",
+	p_library.add_argument("--script-path", "-sp",
 		nargs=2,
 		type=str,
-		dest="set_script",
+		dest="script",
 		metavar=("LIBRARY", "PATH"),
 		help="Set the transcoding script path for a library.")
+
 	ap.add_argument("--set-source-extension", "-sse",
 		nargs=2,
 		type=str,
@@ -454,13 +458,8 @@ if __name__ == "__main__":
 	commands[args.cmd](args)
 	sys.exit(0)
 
-	# change a libraries transcoder using the prebuilt transcoder settings
-	if args.set_script:
-		name, path = args.set_script
-		Library(name).set_script_path(path)
-
 	# set the source file extensions
-	elif args.set_source_ext:
+	if args.set_source_ext:
 		name, ext = args.set_source_ext
 		Library(name).ext("source",ext)
 
