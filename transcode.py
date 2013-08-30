@@ -326,9 +326,19 @@ def transcode_worker(script_path, src, dst):
 
 #	Tool Commands
 # ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-# list different things
-def cmd_list(args):
+def cmd_transcode(args):
 	pass
+
+# list libraries or paths of libraries
+def cmd_list(args):
+	if args.paths:
+		# list paths of a library
+		Library(args.paths).list_paths()
+	else:
+		# default - list the libraries
+		print "Libraries\n"
+		for name in Library.list_names():
+			print Library(name)
 
 def cmd_library(args):
 	pass
@@ -436,10 +446,12 @@ if __name__ == "__main__":
 	settings = Settings.open()
 
 	commands = {
-		"list": cmd_list,
-		"library": cmd_library
+		"transcode": cmd_transcode,
+		"library": cmd_library,
+		"list": cmd_list
 	}
 	commands[args.cmd](args)
+	sys.exit(0)
 
 	# add a library
 	if args.add_library:
@@ -449,12 +461,6 @@ if __name__ == "__main__":
 	elif args.remove_library:
 		name = args.remove_library
 		Library.remove(name)
-
-	# list the available libraries -SQL
-	elif args.list_libraries:
-		print "Libraries\n"
-		for name in Library.list_names():
-			print Library(name)
 
 	# change a libraries transcoder using the prebuilt transcoder settings
 	elif args.set_script:
@@ -537,10 +543,6 @@ if __name__ == "__main__":
 	elif args.remove_path_prefix:
 		name, prefix = args.remove_path_prefix
 		Library(name).remove_path_prefix(prefix)
-
-	# list paths for a library
-	elif args.paths:
-		Library(args.list_paths).list_paths()
 
 	# transcode anything that's missing
 	else:
