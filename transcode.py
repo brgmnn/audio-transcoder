@@ -5,6 +5,7 @@ import fnmatch, re, json, sqlite3
 from sets import Set
 
 db_connection = sqlite3.connect("profile.db3")
+db_connection.row_factory = sqlite3.Row
 
 # space separate variable list
 def ssv_list(lst):
@@ -52,13 +53,13 @@ class Library:
 			row = c.fetchone()
 
 			try:
-				self.id = row[0]
-				self.name = row[1]
-				self.source = row[2]
-				self.target = row[3]
-				self.script_path = row[4]
-				self.exts = [row[5], row[6]]
-				self.cexts = row[7].split(" ")
+				self.id = row["id"]
+				self.name = row["name"]
+				self.source = row["source"]
+				self.target = row["target"]
+				self.script_path = row["script_path"]
+				self.exts = [row["source_ext"], row["target_ext"]]
+				self.cexts = row["copy_ext"].split(" ")
 				self.paths = []
 			except TypeError:
 				print "Could not find library named '"+args[0]+"' in database."
@@ -82,6 +83,9 @@ class Library:
 					self.exts[1],
 					ssv_list(self.cexts) )
 				)
+			c.execute("SELECT id FROM libraries WHERE name=?", (self.name,))
+			self.id = c.fetchone()["id"]
+			print self.id
 			db_connection.commit()
 
 	def __str__(self):
@@ -171,7 +175,7 @@ class Library:
 	def fetch_paths(self):
 		c = db_connection.cursor()
 		c.execute("SELECT path FROM paths WHERE lid=? ORDER BY path ASC", (self.id,))
-		self.paths = [p[0] for p in c.fetchall()]
+		self.paths = [p["path"] for p in c.fetchall()]
 		return self.paths
 
 	# list the paths associated with this library
@@ -300,14 +304,14 @@ class Library:
 	def list_names():
 		c = db_connection.cursor()
 		c.execute("SELECT name FROM libraries ORDER BY name ASC")
-		return [n[0] for n in c.fetchall()]
+		return [n["name"] for n in c.fetchall()]
 
 	# removes a library given its name
 	@staticmethod
 	def remove(name):
 		c = db_connection.cursor()
 		c.execute("SELECT id FROM libraries WHERE name=?", (name,))
-		lid = c.fetchone()[0]
+		lid = c.fetchone()["id"]
 
 		c.execute("DELETE FROM libraries WHERE name=?", (name,))
 		c.execute("DELETE FROM paths WHERE lid=?", (lid,))
