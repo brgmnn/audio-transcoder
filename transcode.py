@@ -51,14 +51,18 @@ class Library:
 			c.execute("SELECT * FROM libraries WHERE name=?", (args[0],))
 			row = c.fetchone()
 
-			self.id = row[0]
-			self.name = row[1]
-			self.source = row[2]
-			self.target = row[3]
-			self.script_path = row[4]
-			self.exts = [row[5], row[6]]
-			self.cexts = row[7].split(" ")
-			self.paths = []
+			try:
+				self.id = row[0]
+				self.name = row[1]
+				self.source = row[2]
+				self.target = row[3]
+				self.script_path = row[4]
+				self.exts = [row[5], row[6]]
+				self.cexts = row[7].split(" ")
+				self.paths = []
+			except TypeError:
+				print "Could not find library named '"+args[0]+"' in database."
+				sys.exit(1)
 		else:
 			self.name = args[0]
 			self.source = os.path.abspath(args[1])
