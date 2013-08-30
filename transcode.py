@@ -324,11 +324,33 @@ def transcode_worker(script_path, src, dst):
 	p.wait()
 	print "job done: "+dst
 
+#	Tool Commands
+# ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+# list different things
+def cmd_list(args):
+	pass
+
+def cmd_library(args):
+	pass
+
 #	Main
 # ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 if __name__ == "__main__":
 	ap = argparse.ArgumentParser(description="Batch transcoding of audio files")
-	
+	subparsers = ap.add_subparsers()
+
+	p_list = subparsers.add_parser("list", help="List different things")
+	p_list.set_defaults(cmd="list")
+	p_list.add_argument("--paths", "-p",
+		type=str,
+		dest="paths",
+		metavar="LIBRARY",
+		help="Lists the paths being watched under a specified library.")
+
+	p_library = subparsers.add_parser("library", help="Configure libraries.")
+	p_library.set_defaults(cmd="library")
+
+
 	# library operations
 	ap.add_argument("--add-library", "-al",
 		nargs=3,
@@ -403,11 +425,6 @@ if __name__ == "__main__":
 		dest="remove_path_prefix",
 		metavar=("LIBRARY", "PATH-PREFIX"),
 		help="Removes all paths under PATH-PREFIX from a library.")
-	ap.add_argument("--list-paths", "-lp",
-		type=str,
-		dest="list_paths",
-		metavar="LIBRARY",
-		help="Lists the paths being watched under a specified library.")
 
 	# profile operations
 	ap.add_argument("--create-profile", "-cp",
@@ -417,6 +434,12 @@ if __name__ == "__main__":
 
 	args = ap.parse_args()
 	settings = Settings.open()
+
+	commands = {
+		"list": cmd_list,
+		"library": cmd_library
+	}
+	commands[args.cmd](args)
 
 	# add a library
 	if args.add_library:
@@ -516,7 +539,7 @@ if __name__ == "__main__":
 		Library(name).remove_path_prefix(prefix)
 
 	# list paths for a library
-	elif args.list_paths:
+	elif args.paths:
 		Library(args.list_paths).list_paths()
 
 	# transcode anything that's missing
