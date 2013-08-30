@@ -81,7 +81,9 @@ class Library:
 			db_connection.commit()
 
 	def __str__(self):
-		return self.name+" ["+str(len(self.paths))+" paths]\n" \
+		c = db_connection.cursor()
+		c.execute("SELECT COUNT(path) FROM paths WHERE lid=?", (self.id,))
+		return self.name+" ["+str(c.fetchone()[0])+" paths]\n" \
 			+"  source dir  = "+self.source+"\n" \
 			+"  target dir  = "+self.target+"\n" \
 			+"  script path = "+self.script_path+"\n" \
