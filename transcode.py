@@ -367,6 +367,9 @@ def cmd_library(args):
 		name = args.clear_copy
 		Library(name).ext("copy",set="")
 
+def cmd_path(args):
+	pass
+
 #	Main
 # ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 if __name__ == "__main__":
@@ -468,6 +471,7 @@ if __name__ == "__main__":
 	commands = {
 		"library": cmd_library,
 		"list": cmd_list,
+		"path": cmd_path,
 		"transcode": cmd_transcode
 	}
 	commands[args.cmd](args)
