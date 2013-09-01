@@ -4,5 +4,5 @@
         ".ogg"
     ],
     "default_script_path": "encoders/skip.sh",
-    "multithreaded": false
+    "multithreaded": true
 }

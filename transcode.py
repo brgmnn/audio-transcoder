@@ -370,6 +370,36 @@ def cmd_library(args):
 def cmd_path(args):
 	pass
 
+def cmd_profile(args):
+	if args.new:
+		# creates a new database profile. will delete the contents of an existing "profile.db3"!
+		db_connection.close()
+		fp = open("profile.db3", "rw+")
+		fp.truncate()
+		fp.close()
+		
+		db_connection = sqlite3.connect("profile.db3")
+		c = db_connection.cursor()
+		c.execute("CREATE TABLE libraries \
+			(	id INTEGER PRIMARY KEY, \
+				name TEXT, \
+				source TEXT, \
+				target TEXT, \
+				script_path TEXT, \
+				source_ext TEXT, \
+				target_ext TEXT, \
+				copy_ext TEXT, \
+				UNIQUE (name))")
+
+		c.execute("CREATE TABLE paths \
+			(	id INTEGER PRIMARY KEY, \
+				lid INTEGER, \
+				path TEXT, \
+				UNIQUE (lid, path) \
+				FOREIGN KEY (lid) REFERENCES libraries(id))")
+
+		db_connection.commit()
+
 #	Main
 # ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 if __name__ == "__main__":
@@ -460,9 +490,11 @@ if __name__ == "__main__":
 		help="Removes all paths under PATH-PREFIX from a library.")
 
 	# profile operations
-	ap.add_argument("--create-profile", "-cp",
+	p_profile = subparsers.add_parser("profile", help="Configure profile.")
+	p_profile.set_defaults(cmd="profile")
+	p_profile.add_argument("--new", "-cp",
 		action="store_true",
-		dest="create_profile",
+		dest="new",
 		help="Creates a new blank profile. A profile contains all libraries, paths and settings for the application.")
 
 	args = ap.parse_args()
@@ -472,42 +504,14 @@ if __name__ == "__main__":
 		"library": cmd_library,
 		"list": cmd_list,
 		"path": cmd_path,
+		"profile": cmd_profile,
 		"transcode": cmd_transcode
 	}
 	commands[args.cmd](args)
 	sys.exit(0)
 
-	# creates a new database profile. will delete the contents of an existing "profile.db3"!
-	if args.create_profile:
-		db_connection.close()
-		fp = open("profile.db3", "rw+")
-		fp.truncate()
-		fp.close()
-		
-		db_connection = sqlite3.connect("profile.db3")
-		c = db_connection.cursor()
-		c.execute("CREATE TABLE libraries \
-			(	id INTEGER PRIMARY KEY, \
-				name TEXT, \
-				source TEXT, \
-				target TEXT, \
-				script_path TEXT, \
-				source_ext TEXT, \
-				target_ext TEXT, \
-				copy_ext TEXT, \
-				UNIQUE (name))")
-
-		c.execute("CREATE TABLE paths \
-			(	id INTEGER PRIMARY KEY, \
-				lid INTEGER, \
-				path TEXT, \
-				UNIQUE (lid, path) \
-				FOREIGN KEY (lid) REFERENCES libraries(id))")
-
-		db_connection.commit()
-
 	# add a path to a library
-	elif args.add_path:
+	if args.add_path:
 		name, path = args.add_path
 		Library(name).add_path(path)
 
