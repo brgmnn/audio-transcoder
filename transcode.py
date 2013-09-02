@@ -372,12 +372,12 @@ def cmd_path(args):
 		Library(name).add_path(path)
 	elif args.import_paths:
 		# import multiple paths from stdin
-		name = args.import_paths
-
-		lib = Library(name)
+		lib = Library(args.import_paths)
 		for path in sys.stdin:
 			lib.add_path(path[:-1])
-
+	elif args.export:
+		# export paths from a library
+		Library(args.export).export_paths()
 
 def cmd_profile(args):
 	if args.new:
@@ -484,11 +484,11 @@ if __name__ == "__main__":
 		dest="import_paths",
 		metavar="LIBRARY",
 		help="Imports multiple paths to the specified library. Paths are read from the standard input stream with one path per line.")
-	ap.add_argument("--export-paths", "-ep",
+	p_path.add_argument("--export", "-e",
 		type=str,
-		dest="export_paths",
+		dest="export",
 		metavar="LIBRARY",
-		help="Exports the paths for the given library to a plaintext format which can then be read in again using --import-paths.")
+		help="Exports the paths for the given library to a plaintext format which can then be read in again using 'path --import'.")
 	ap.add_argument("--remove-path", "-rp",
 		nargs=2,
 		type=str,
@@ -523,13 +523,8 @@ if __name__ == "__main__":
 	commands[args.cmd](args)
 	sys.exit(0)
 
-	# export paths from a library
-	if args.export_paths:
-		name = args.export_paths
-		Library(name).export_paths()
-
 	# remove a path from a library
-	elif args.remove_path:
+	if args.remove_path:
 		name, path = args.remove_path
 		Library(name).remove_path(path)
 
