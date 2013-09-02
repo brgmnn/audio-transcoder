@@ -378,6 +378,10 @@ def cmd_path(args):
 	elif args.export:
 		# export paths from a library
 		Library(args.export).export_paths()
+	if args.remove:
+		# remove a path from a library
+		name, path = args.remove
+		Library(name).remove_path(path)
 
 def cmd_profile(args):
 	if args.new:
@@ -489,10 +493,10 @@ if __name__ == "__main__":
 		dest="export",
 		metavar="LIBRARY",
 		help="Exports the paths for the given library to a plaintext format which can then be read in again using 'path --import'.")
-	ap.add_argument("--remove-path", "-rp",
+	p_path.add_argument("--remove", "-r",
 		nargs=2,
 		type=str,
-		dest="remove_path",
+		dest="remove",
 		metavar=("LIBRARY", "PATH"),
 		help="Remove a path from a library. Does not remove sub-paths under this path. Fails if the path does not exist in the library or if the library does not exist.")
 	ap.add_argument("--remove-path-prefix", "-rpp",
@@ -523,13 +527,8 @@ if __name__ == "__main__":
 	commands[args.cmd](args)
 	sys.exit(0)
 
-	# remove a path from a library
-	if args.remove_path:
-		name, path = args.remove_path
-		Library(name).remove_path(path)
-
 	# remove paths from a library
-	elif args.remove_path_prefix:
+	if args.remove_path_prefix:
 		name, prefix = args.remove_path_prefix
 		Library(name).remove_path_prefix(prefix)
 
