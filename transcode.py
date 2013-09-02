@@ -100,6 +100,7 @@ class Library:
 
 	# adds a path to the library
 	def add_path(self, path):
+		# TODO: gracefully fail if inserting the path fails.
 		path = os.path.abspath(self.check_path(path))
 
 		if not path.startswith(self.source):
@@ -369,6 +370,14 @@ def cmd_path(args):
 		# add a path to a library
 		name, path = args.add
 		Library(name).add_path(path)
+	elif args.import_paths:
+		# import multiple paths from stdin
+		name = args.import_paths
+
+		lib = Library(name)
+		for path in sys.stdin:
+			lib.add_path(path[:-1])
+
 
 def cmd_profile(args):
 	if args.new:
@@ -470,7 +479,7 @@ if __name__ == "__main__":
 		dest="add",
 		metavar=("LIBRARY", "PATH"),
 		help="Adds a path to a library. Fails if the path given is not inside the libraries target path.")
-	ap.add_argument("--import-paths", "-ip",
+	p_path.add_argument("--import", "-i",
 		type=str,
 		dest="import_paths",
 		metavar="LIBRARY",
@@ -514,16 +523,8 @@ if __name__ == "__main__":
 	commands[args.cmd](args)
 	sys.exit(0)
 
-	# import multiple paths from stdin
-	if args.import_paths:
-		name = args.import_paths
-
-		lib = Library(name)
-		for path in sys.stdin:
-			lib.add_path(path[:-1])
-
 	# export paths from a library
-	elif args.export_paths:
+	if args.export_paths:
 		name = args.export_paths
 		Library(name).export_paths()
 
