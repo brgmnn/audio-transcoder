@@ -378,10 +378,14 @@ def cmd_path(args):
 	elif args.export:
 		# export paths from a library
 		Library(args.export).export_paths()
-	if args.remove:
+	elif args.remove:
 		# remove a path from a library
 		name, path = args.remove
 		Library(name).remove_path(path)
+		# remove paths from a library
+	elif args.remove_tree:
+		name, prefix = args.remove_tree
+		Library(name).remove_path_prefix(prefix)
 
 def cmd_profile(args):
 	if args.new:
@@ -499,10 +503,10 @@ if __name__ == "__main__":
 		dest="remove",
 		metavar=("LIBRARY", "PATH"),
 		help="Remove a path from a library. Does not remove sub-paths under this path. Fails if the path does not exist in the library or if the library does not exist.")
-	ap.add_argument("--remove-path-prefix", "-rpp",
+	p_path.add_argument("--remove-tree", "-rt",
 		nargs=2,
 		type=str,
-		dest="remove_path_prefix",
+		dest="remove_tree",
 		metavar=("LIBRARY", "PATH-PREFIX"),
 		help="Removes all paths under PATH-PREFIX from a library.")
 
@@ -527,30 +531,24 @@ if __name__ == "__main__":
 	commands[args.cmd](args)
 	sys.exit(0)
 
-	# remove paths from a library
-	if args.remove_path_prefix:
-		name, prefix = args.remove_path_prefix
-		Library(name).remove_path_prefix(prefix)
-
 	# transcode anything that's missing
-	else:
-		print "--- Audio Transcoder ---"
-		print "  Workers: "+str(mp.cpu_count())
+	print "--- Audio Transcoder ---"
+	print "  Workers: "+str(mp.cpu_count())
 
-		workers = []
-		if Settings.properties["multithreaded"]:
-			if Settings.properties["cores"] > 1:
-				workers = mp.Pool(Settings.properties["cores"])
-			else:
-				workers = mp.Pool()
+	workers = []
+	if Settings.properties["multithreaded"]:
+		if Settings.properties["cores"] > 1:
+			workers = mp.Pool(Settings.properties["cores"])
+		else:
+			workers = mp.Pool()
 
-		for name in sorted(Library.list_names()):
-			lib = Library(name)
-			lib.clean_tree()
-			lib.transcode(workers)
+	for name in sorted(Library.list_names()):
+		lib = Library(name)
+		lib.clean_tree()
+		lib.transcode(workers)
 
-		if Settings.properties["multithreaded"]:
-			workers.close()
-			workers.join()
+	if Settings.properties["multithreaded"]:
+		workers.close()
+		workers.join()
 
 	db_connection.close()
