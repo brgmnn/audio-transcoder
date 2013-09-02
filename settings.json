@@ -1,8 +1,0 @@
-{
-    "default_exts": [
-        ".flac",
-        ".ogg"
-    ],
-    "default_script_path": "encoders/skip.sh",
-    "multithreaded": true
-}
