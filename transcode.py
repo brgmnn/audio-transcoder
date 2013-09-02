@@ -325,20 +325,6 @@ def transcode_worker(script_path, src, dst):
 
 #	Tool Commands
 # ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-def cmd_transcode(args):
-	pass
-
-# list libraries or paths of libraries
-def cmd_list(args):
-	if args.paths:
-		# list paths of a library
-		Library(args.paths).list_paths()
-	else:
-		# default - list the libraries
-		print "Libraries\n"
-		for name in Library.list_names():
-			print Library(name)
-
 def cmd_library(args):
 	if args.new:
 		# add a library
@@ -367,13 +353,27 @@ def cmd_library(args):
 		name = args.clear_copy
 		Library(name).ext("copy",set="")
 
+# list libraries or paths of libraries
+def cmd_list(args):
+	if args.paths:
+		# list paths of a library
+		Library(args.paths).list_paths()
+	else:
+		# default - list the libraries
+		print "Libraries\n"
+		for name in Library.list_names():
+			print Library(name)
+
 def cmd_path(args):
-	pass
+	if args.add:
+		# add a path to a library
+		name, path = args.add
+		Library(name).add_path(path)
 
 def cmd_profile(args):
 	if args.new:
 		# creates a new database profile. will delete the contents of an existing "profile.db3"!
-		db_connection.close()
+		# db_connection.close()
 		fp = open("profile.db3", "rw+")
 		fp.truncate()
 		fp.close()
@@ -390,7 +390,6 @@ def cmd_profile(args):
 				target_ext TEXT, \
 				copy_ext TEXT, \
 				UNIQUE (name))")
-
 		c.execute("CREATE TABLE paths \
 			(	id INTEGER PRIMARY KEY, \
 				lid INTEGER, \
@@ -399,6 +398,9 @@ def cmd_profile(args):
 				FOREIGN KEY (lid) REFERENCES libraries(id))")
 
 		db_connection.commit()
+
+def cmd_transcode(args):
+	pass
 
 #	Main
 # ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
@@ -460,10 +462,12 @@ if __name__ == "__main__":
 		help="Clears the copy extension list for a library. After calling this command no files will be copied over from the source to target tree.")
 
 	# path operations
-	ap.add_argument("--add-path", "-ap",
+	p_path = subparsers.add_parser("path", help="Configure paths for a library.")
+	p_path.set_defaults(cmd="path")
+	p_path.add_argument("--add", "-a",
 		nargs=2,
 		type=str,
-		dest="add_path",
+		dest="add",
 		metavar=("LIBRARY", "PATH"),
 		help="Adds a path to a library. Fails if the path given is not inside the libraries target path.")
 	ap.add_argument("--import-paths", "-ip",
@@ -510,13 +514,8 @@ if __name__ == "__main__":
 	commands[args.cmd](args)
 	sys.exit(0)
 
-	# add a path to a library
-	if args.add_path:
-		name, path = args.add_path
-		Library(name).add_path(path)
-
 	# import multiple paths from stdin
-	elif args.import_paths:
+	if args.import_paths:
 		name = args.import_paths
 
 		lib = Library(name)
