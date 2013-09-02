@@ -4,8 +4,8 @@ import multiprocessing as mp, os, shutil, subprocess, sys, time, argparse, pickl
 import fnmatch, re, json, sqlite3
 from sets import Set
 
-db_connection = sqlite3.connect("profile.db3")
-db_connection.row_factory = sqlite3.Row
+dbc = sqlite3.connect("profile.db3")
+dbc.row_factory = sqlite3.Row
 
 # space separate variable list
 def ssv_list(lst):
@@ -48,7 +48,7 @@ class Settings:
 class Library:
 	def __init__(self, *args, **kwargs):
 		if len(args) == 1:
-			c = db_connection.cursor()
+			c = dbc.cursor()
 			c.execute("SELECT * FROM libraries WHERE name=?", (args[0],))
 			row = c.fetchone()
 
@@ -73,7 +73,7 @@ class Library:
 			self.exts = [e for e in Settings.properties["default_exts"]]
 			self.cexts = [e for e in Settings.properties["default_copy_exts"]]
 			
-			c = db_connection.cursor()
+			c = dbc.cursor()
 			c.execute("INSERT INTO libraries VALUES (NULL,?,?,?,?,?,?,?)",
 				(	self.name,
 					self.source,
@@ -85,12 +85,11 @@ class Library:
 				)
 			c.execute("SELECT id FROM libraries WHERE name=?", (self.name,))
 			self.id = c.fetchone()["id"]
-			db_connection.commit()
+			dbc.commit()
 
 	def __str__(self):
-		c = db_connection.cursor()
-		c.execute("SELECT COUNT(path) FROM paths WHERE lid=?", (self.id,))
-		return self.name+" ["+str(c.fetchone()[0])+" paths]\n" \
+		val = dbc.execute("SELECT COUNT(path) FROM paths WHERE lid=?", (self.id,)).fetchone()[0]
+		return self.name+" ["+str(val)+" paths]\n" \
 			+"  source dir  = "+self.source+"\n" \
 			+"  target dir  = "+self.target+"\n" \
 			+"  script path = "+self.script_path+"\n" \
@@ -109,12 +108,12 @@ class Library:
 			return 1
 
 		try:
-			c = db_connection.cursor()
-			c.execute("INSERT INTO paths VALUES (NULL,?,?)", \
+			dbc.execute("INSERT INTO paths VALUES (NULL,?,?)", \
 				(self.id, os.path.relpath(path, self.source)))
-			db_connection.commit()
+			dbc.commit()
 		except sqlite3.IntegrityError:
 			print "path already in database!"
+			return 1
 		return 0
 
 	# remove a path from the library
@@ -125,10 +124,9 @@ class Library:
 			print "Path not under root!"
 			return 1
 
-		c = db_connection.cursor()
-		c.execute("DELETE FROM paths WHERE lid=? AND path=?", \
+		dbc.execute("DELETE FROM paths WHERE lid=? AND path=?", \
 			(self.id, os.path.relpath(path, self.source)))
-		db_connection.commit()
+		dbc.commit()
 		return 0
 
 	# removes all paths under a given root directory
@@ -139,43 +137,40 @@ class Library:
 			print "Path not under root!"
 			return 1
 
-		c = db_connection.cursor()
-		c.execute("DELETE FROM paths WHERE lid=? AND path LIKE ?", \
+		dbc.execute("DELETE FROM paths WHERE lid=? AND path LIKE ?", \
 			(self.id, os.path.relpath(prefix, self.source)+"%") )
-		db_connection.commit()
+		dbc.commit()
 		return 0
 
 	# sets the script path
 	def set_script_path(self, path):
-		c = db_connection.cursor()
-		c.execute("UPDATE libraries SET script_path=? WHERE id=?", (path, self.id))
-		db_connection.commit()
+		dbc.execute("UPDATE libraries SET script_path=? WHERE id=?", (path, self.id))
+		dbc.commit()
 
 	# manipulate the extensions
 	def ext(self, *args, **kwargs):
-		c = db_connection.cursor()
 		if args[0] == "source":
-			c.execute("UPDATE libraries SET source_ext=? WHERE id=?", (args[1], self.id))
+			dbc.execute("UPDATE libraries SET source_ext=? WHERE id=?", (args[1], self.id))
 		elif args[0] == "target":
-			c.execute("UPDATE libraries SET target_ext=? WHERE id=?", (args[1], self.id))
+			dbc.execute("UPDATE libraries SET target_ext=? WHERE id=?", (args[1], self.id))
 		elif args[0] == "copy":
 			if "append" in kwargs:
 				new_cexts = list(self.cexts)
 				new_cexts.extend(kwargs["append"].split())
 				new_cexts = list(set(new_cexts))
 				new_cexts.sort()
-				c.execute("UPDATE libraries SET copy_ext=? WHERE id=?", \
+				dbc.execute("UPDATE libraries SET copy_ext=? WHERE id=?", \
 					(ssv_list(new_cexts), self.id))
 			elif "set" in kwargs:
-				c.execute("UPDATE libraries SET copy_ext=? WHERE id=?", \
+				dbc.execute("UPDATE libraries SET copy_ext=? WHERE id=?", \
 					(ssv_list(kwargs["set"]), self.id))
 		else:
 			return
-		db_connection.commit()
+		dbc.commit()
 
 	# queries the database and returns all the paths associated with it
 	def fetch_paths(self):
-		c = db_connection.cursor()
+		c = dbc.cursor()
 		c.execute("SELECT path FROM paths WHERE lid=? ORDER BY path ASC", (self.id,))
 		self.paths = [p["path"] for p in c.fetchall()]
 		return self.paths
@@ -304,20 +299,15 @@ class Library:
 	# lists the names of all the libraries
 	@staticmethod
 	def list_names():
-		c = db_connection.cursor()
-		c.execute("SELECT name FROM libraries ORDER BY name ASC")
-		return [n["name"] for n in c.fetchall()]
+		return [n["name"] for n in dbc.execute("SELECT name FROM libraries ORDER BY name ASC")]
 
 	# removes a library given its name
 	@staticmethod
 	def remove(name):
-		c = db_connection.cursor()
-		c.execute("SELECT id FROM libraries WHERE name=?", (name,))
-		lid = c.fetchone()["id"]
-
-		c.execute("DELETE FROM libraries WHERE name=?", (name,))
-		c.execute("DELETE FROM paths WHERE lid=?", (lid,))
-		db_connection.commit()
+		lid = dbc.execute("SELECT id FROM libraries WHERE name=?", (name,)).fetchone()["id"]
+		dbc.execute("DELETE FROM libraries WHERE name=?", (name,))
+		dbc.execute("DELETE FROM paths WHERE lid=?", (lid,))
+		dbc.commit()
 
 # worker thread to transcode a single item
 def transcode_worker(script_path, src, dst):
@@ -395,14 +385,12 @@ def cmd_path(args):
 def cmd_profile(args):
 	if args.new:
 		# creates a new database profile. will delete the contents of an existing "profile.db3"!
-		# db_connection.close()
 		fp = open("profile.db3", "rw+")
 		fp.truncate()
 		fp.close()
 		
-		db_connection = sqlite3.connect("profile.db3")
-		c = db_connection.cursor()
-		c.execute("CREATE TABLE libraries \
+		dbc = sqlite3.connect("profile.db3")
+		dbc.execute("CREATE TABLE libraries \
 			(	id INTEGER PRIMARY KEY, \
 				name TEXT, \
 				source TEXT, \
@@ -412,14 +400,14 @@ def cmd_profile(args):
 				target_ext TEXT, \
 				copy_ext TEXT, \
 				UNIQUE (name))")
-		c.execute("CREATE TABLE paths \
+		dbc.execute("CREATE TABLE paths \
 			(	id INTEGER PRIMARY KEY, \
 				lid INTEGER, \
 				path TEXT, \
 				UNIQUE (lid, path) \
 				FOREIGN KEY (lid) REFERENCES libraries(id))")
 
-		db_connection.commit()
+		dbc.commit()
 
 # default behaviour.
 def cmd_run(args):
@@ -557,4 +545,4 @@ if __name__ == "__main__":
 		"run": cmd_run
 	}
 	commands[args.cmd](args)
-	db_connection.close()
+	dbc.close()
