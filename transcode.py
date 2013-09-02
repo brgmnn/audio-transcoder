@@ -100,7 +100,6 @@ class Library:
 
 	# adds a path to the library
 	def add_path(self, path):
-		# TODO: gracefully fail if inserting the path fails.
 		path = os.path.abspath(self.check_path(path))
 
 		if not path.startswith(self.source):
@@ -109,10 +108,13 @@ class Library:
 			print path
 			return 1
 
-		c = db_connection.cursor()
-		c.execute("INSERT INTO paths VALUES (NULL,?,?)", \
-			(self.id, os.path.relpath(path, self.source)))
-		db_connection.commit()
+		try:
+			c = db_connection.cursor()
+			c.execute("INSERT INTO paths VALUES (NULL,?,?)", \
+				(self.id, os.path.relpath(path, self.source)))
+			db_connection.commit()
+		except sqlite3.IntegrityError:
+			print "path already in database!"
 		return 0
 
 	# remove a path from the library
@@ -540,6 +542,7 @@ if __name__ == "__main__":
 		dest="new",
 		help="Creates a new blank profile. A profile contains all libraries, paths and settings for the application.")
 
+	# run operations
 	p_run = subparsers.add_parser("run", help="Run the transcoder.")
 	p_run.set_defaults(cmd="run")
 
