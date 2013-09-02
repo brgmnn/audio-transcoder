@@ -326,6 +326,7 @@ def transcode_worker(script_path, src, dst):
 
 #	Tool Commands
 # ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+# edit libraries
 def cmd_library(args):
 	if args.new:
 		# add a library
@@ -365,6 +366,7 @@ def cmd_list(args):
 		for name in Library.list_names():
 			print Library(name)
 
+# edit paths
 def cmd_path(args):
 	if args.add:
 		# add a path to a library
@@ -387,6 +389,7 @@ def cmd_path(args):
 		name, prefix = args.remove_tree
 		Library(name).remove_path_prefix(prefix)
 
+# at the moment just to initialise the profile database.
 def cmd_profile(args):
 	if args.new:
 		# creates a new database profile. will delete the contents of an existing "profile.db3"!
@@ -416,8 +419,27 @@ def cmd_profile(args):
 
 		db_connection.commit()
 
-def cmd_transcode(args):
-	pass
+# default behaviour.
+def cmd_run(args):
+	# transcode anything that's missing
+	print "--- Audio Transcoder ---"
+	print "  Workers: "+str(mp.cpu_count())
+
+	workers = []
+	if Settings.properties["multithreaded"]:
+		if Settings.properties["cores"] > 1:
+			workers = mp.Pool(Settings.properties["cores"])
+		else:
+			workers = mp.Pool()
+
+	for name in sorted(Library.list_names()):
+		lib = Library(name)
+		lib.clean_tree()
+		lib.transcode(workers)
+
+	if Settings.properties["multithreaded"]:
+		workers.close()
+		workers.join()
 
 #	Main
 # ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
@@ -518,6 +540,9 @@ if __name__ == "__main__":
 		dest="new",
 		help="Creates a new blank profile. A profile contains all libraries, paths and settings for the application.")
 
+	p_run = subparsers.add_parser("run", help="Run the transcoder.")
+	p_run.set_defaults(cmd="run")
+
 	args = ap.parse_args()
 	settings = Settings.open()
 
@@ -526,29 +551,7 @@ if __name__ == "__main__":
 		"list": cmd_list,
 		"path": cmd_path,
 		"profile": cmd_profile,
-		"transcode": cmd_transcode
+		"run": cmd_run
 	}
 	commands[args.cmd](args)
-	sys.exit(0)
-
-	# transcode anything that's missing
-	print "--- Audio Transcoder ---"
-	print "  Workers: "+str(mp.cpu_count())
-
-	workers = []
-	if Settings.properties["multithreaded"]:
-		if Settings.properties["cores"] > 1:
-			workers = mp.Pool(Settings.properties["cores"])
-		else:
-			workers = mp.Pool()
-
-	for name in sorted(Library.list_names()):
-		lib = Library(name)
-		lib.clean_tree()
-		lib.transcode(workers)
-
-	if Settings.properties["multithreaded"]:
-		workers.close()
-		workers.join()
-
 	db_connection.close()
