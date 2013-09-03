@@ -544,11 +544,18 @@ if __name__ == "__main__":
 	p_profile.add_argument("--new", "-cp",
 		action="store_true",
 		dest="new",
-		help="Creates a new blank profile. A profile contains all libraries, paths and settings for the application.")
+		help="Creates a new blank profile. A profile contains all libraries, paths and settings \
+			for the application.")
 
 	# run operations
 	p_run = subparsers.add_parser("run", help="Run the transcoder.")
 	p_run.set_defaults(cmd="run")
+	p_run.add_argument("todo",
+		nargs="*",
+		type=str,
+		help="What should the transcoder do. Specify either a library or a source and target \
+			directory and the transcoder will process those (with the default settings in \
+			settings.json for a path tuple). Leave empty to process all libraries.")
 
 	args = ap.parse_args()
 	settings = Settings.open()
@@ -573,5 +580,8 @@ if __name__ == "__main__":
 		print >> sys.stderr, "  path =",e.path
 	except Path.AlreadyExists:
 		print >> sys.stderr, "Error: Path already in library database!"
+	except KeyboardInterrupt:
+		print >> sys.stderr
+		print >> sys.stderr, "Terminated early from user input."
 
 	dbc.close()
