@@ -304,10 +304,14 @@ class Library:
 	# removes a library given its name
 	@staticmethod
 	def remove(name):
-		lid = dbc.execute("SELECT id FROM libraries WHERE name=?", (name,)).fetchone()["id"]
-		dbc.execute("DELETE FROM libraries WHERE name=?", (name,))
-		dbc.execute("DELETE FROM paths WHERE lid=?", (lid,))
-		dbc.commit()
+		try:
+			lid = dbc.execute("SELECT id FROM libraries WHERE name=?", (name,)).fetchone()["id"]
+			dbc.execute("DELETE FROM libraries WHERE name=?", (name,))
+			dbc.execute("DELETE FROM paths WHERE lid=?", (lid,))
+			dbc.commit()
+			print "Deleted library '"+name+"'."
+		except TypeError:
+			print "Library '"+name+"' does not exist."
 
 # worker thread to transcode a single item
 def transcode_worker(script_path, src, dst):
