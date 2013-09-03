@@ -79,6 +79,16 @@ class Library:
 				self.paths = []
 			except TypeError:
 				raise Library.NotFound
+		elif len(args) == 2:
+			# this is a temporary library to transcode everything in a folder.
+			self.id = -1
+			self.name = ":temporary-library:"
+			self.source = os.path.abspath(args[0])
+			self.target = os.path.abspath(args[1])
+			self.paths = ["./"]
+			self.script_path = Settings.properties["default_script_path"].encode('ascii', 'ignore')
+			self.exts = [e for e in Settings.properties["default_exts"]]
+			self.cexts = [e for e in Settings.properties["default_copy_exts"]]
 		else:
 			self.name = args[0]
 			self.source = os.path.abspath(args[1])
@@ -211,7 +221,10 @@ class Library:
 		self.items = 0;
 		self.current = 0;
 
-		for path in self.fetch_paths():
+		if self.id >= 0:
+			self.fetch_paths()
+
+		for path in self.paths:
 			src = os.path.join(self.source, path)
 
 			if os.path.isfile(src) and src not in seen:
@@ -440,11 +453,19 @@ def cmd_run(args):
 			workers = mp.Pool()
 	
 	if len(args.todo) == 1:
+		# only process a specific library
 		lib = Library(args.todo[0])
 		print "  [",args.todo[0],"]"
 		lib.clean_tree()
 		lib.transcode(workers)
+	elif len(args.todo) == 2:
+		# process this as a source, target directory and process all files in it.
+		# only process a specific library
+		lib = Library(args.todo[0], args.todo[1])
+		lib.clean_tree()
+		lib.transcode(workers)
 	else:
+		# process all libraries
 		for name in sorted(Library.list_names()):
 			lib = Library(name)
 			print "  [",name,"]"
