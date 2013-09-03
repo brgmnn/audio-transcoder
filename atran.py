@@ -15,21 +15,6 @@ def ssv_list(lst):
 		output.write(" ")
 	return output.getvalue().strip()
 
-#*		Exceptions
-#*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*#
-class OutsideRoot(Exception):
-	def __init__(self, value):
-		self.value = value
-	def __str__(self):
-		return repr(self.value)
-
-# when a library is not found in the database
-class LibraryNotFound(Exception):
-	def __init__(self, name):
-		self.name = name
-	def __str__(self):
-		return repr(self.name)
-
 #*		Settings
 #*	holds the global settings for the transcoder.
 #*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*#
@@ -62,6 +47,15 @@ class Settings:
 #*	handles each library of audio files.
 #*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*#
 class Library:
+	# Exceptions
+	class NotFound(Exception):
+		def __init__(self, name):
+			self.name = name
+	class OutsideSource(Exception):
+		def __init__(self, source, path):
+			self.source = source
+			self.path = path
+
 	def __init__(self, *args, **kwargs):
 		if len(args) == 1:
 			row = dbc.execute("SELECT * FROM libraries WHERE name=?", (args[0],)).fetchone()
@@ -76,7 +70,7 @@ class Library:
 				self.cexts = row["copy_ext"].split(" ")
 				self.paths = []
 			except TypeError:
-				raise LibraryNotFound(args[0])
+				raise Library.NotFound(args[0])
 		else:
 			self.name = args[0]
 			self.source = os.path.abspath(args[1])
@@ -117,16 +111,14 @@ class Library:
 		path = os.path.abspath(self.check_path(path))
 
 		if not path.startswith(self.source):
-			print >> sys.stderr, "Error: Path is outside of the library source path."
-			print >> sys.stderr, "       Library source:",self.source
-			print >> sys.stderr, "       Failed path:",path
-			return 1
+			raise Library.OutsideSource(self.source, path)
 
 		try:
 			dbc.execute("INSERT INTO paths VALUES (NULL,?,?)", \
 				(self.id, os.path.relpath(path, self.source)))
 			dbc.commit()
 		except sqlite3.IntegrityError:
+			raise PathAlreadyExists()
 			print >> sys.stderr, "Error: Path already in library database!"
 			return 1
 		return 0
@@ -136,10 +128,7 @@ class Library:
 		path = os.path.abspath(self.check_path(path))
 
 		if not path.startswith(self.source):
-			print >> sys.stderr, "Error: Path is outside of the library source path!"
-			print >> sys.stderr, "       Library source:",self.source
-			print >> sys.stderr, "       Failed path:",path
-			return 1
+			raise Library.OutsideSource(self.source, path)
 
 		dbc.execute("DELETE FROM paths WHERE lid=? AND path=?", \
 			(self.id, os.path.relpath(path, self.source)))
@@ -151,10 +140,7 @@ class Library:
 		prefix = os.path.abspath(self.check_path(prefix))
 
 		if not prefix.startswith(self.source):
-			print >> sys.stderr, "Error: Path is outside of the library source path!"
-			print >> sys.stderr, "       Library source:",self.source
-			print >> sys.stderr, "       Failed path:",prefix
-			return 1
+			raise Library.OutsideSource(self.source, prefix)
 
 		dbc.execute("DELETE FROM paths WHERE lid=? AND path LIKE ?", \
 			(self.id, os.path.relpath(prefix, self.source)+"%") )
@@ -330,7 +316,7 @@ class Library:
 			dbc.commit()
 			print "Deleted library '"+name+"'."
 		except TypeError:
-			raise LibraryNotFound(name)
+			raise Library.NotFound(name)
 
 # worker thread to transcode a single item
 def transcode_worker(script_path, src, dst):
@@ -570,7 +556,13 @@ if __name__ == "__main__":
 	
 	try:
 		commands[args.cmd](args)
-	except LibraryNotFound as e:
-		print >> sys.stderr, "Error: No library named",e,"in database."
+	except Library.NotFound as e:
+		print >> sys.stderr, "Error: No library named",repr(e.name),"in database."
+	except Library.OutsideSource as e:
+		print >> sys.stderr, "Error: Path is outside of the library source path."
+		print >> sys.stderr, "  source =",e.source
+		print >> sys.stderr, "  path =",e.path
+	except PathAlreadyExists:
+		print >> sys.stderr, "Error: Path already in library database!"
 
 	dbc.close()
