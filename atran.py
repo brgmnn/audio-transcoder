@@ -15,6 +15,21 @@ def ssv_list(lst):
 		output.write(" ")
 	return output.getvalue().strip()
 
+#*		Exceptions
+#*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*#
+class OutsideRoot(Exception):
+	def __init__(self, value):
+		self.value = value
+	def __str__(self):
+		return repr(self.value)
+
+# when a library is not found in the database
+class LibraryNotFound(Exception):
+	def __init__(self, name):
+		self.name = name
+	def __str__(self):
+		return repr(self.name)
+
 #*		Settings
 #*	holds the global settings for the transcoder.
 #*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*#
@@ -41,7 +56,7 @@ class Settings:
 				json.dumps(Settings.properties, sort_keys=True, indent=4,\
 					separators=(',', ': ')))
 		except IOError:
-			print "Failed to save settings."
+			print >> sys.stderr, "Error: Failed to save settings."
 
 #*		Library
 #*	handles each library of audio files.
@@ -61,8 +76,7 @@ class Library:
 				self.cexts = row["copy_ext"].split(" ")
 				self.paths = []
 			except TypeError:
-				print >> sys.stderr, "Error: No library named '"+args[0]+"' in database."
-				sys.exit(1)
+				raise LibraryNotFound(args[0])
 		else:
 			self.name = args[0]
 			self.source = os.path.abspath(args[1])
@@ -73,15 +87,14 @@ class Library:
 			self.cexts = [e for e in Settings.properties["default_copy_exts"]]
 			
 			try:
-				dbc.execute("INSERT INTO libraries VALUES (NULL,?,?,?,?,?,?,?)",
-					(	self.name,
-						self.source,
-						self.target,
-						self.script_path,
-						self.exts[0],
-						self.exts[1],
-						ssv_list(self.cexts) )
-					)
+				dbc.execute("INSERT INTO libraries VALUES (NULL,?,?,?,?,?,?,?)", (
+					self.name,
+					self.source,
+					self.target,
+					self.script_path,
+					self.exts[0],
+					self.exts[1],
+					ssv_list(self.cexts) ))
 				self.id = dbc.execute("SELECT id FROM libraries WHERE name=?", \
 					(self.name,)).fetchone()["id"]
 				dbc.commit()
@@ -317,7 +330,7 @@ class Library:
 			dbc.commit()
 			print "Deleted library '"+name+"'."
 		except TypeError:
-			print >> sys.stderr, "Error: Library '"+name+"' does not exist."
+			raise LibraryNotFound(name)
 
 # worker thread to transcode a single item
 def transcode_worker(script_path, src, dst):
@@ -554,5 +567,10 @@ if __name__ == "__main__":
 		"profile": cmd_profile,
 		"run": cmd_run
 	}
-	commands[args.cmd](args)
+	
+	try:
+		commands[args.cmd](args)
+	except LibraryNotFound as e:
+		print >> sys.stderr, "Error: No library named",e,"in database."
+
 	dbc.close()
