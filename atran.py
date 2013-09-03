@@ -430,18 +430,26 @@ def cmd_run(args):
 	# transcode anything that's missing
 	print "--- Audio Transcoder ---"
 	print "  Workers: "+str(mp.cpu_count())
-
+	print
+	
 	workers = []
 	if Settings.properties["multithreaded"]:
 		if Settings.properties["cores"] > 1:
 			workers = mp.Pool(Settings.properties["cores"])
 		else:
 			workers = mp.Pool()
-
-	for name in sorted(Library.list_names()):
-		lib = Library(name)
+	
+	if len(args.todo) == 1:
+		lib = Library(args.todo[0])
+		print "  [",args.todo[0],"]"
 		lib.clean_tree()
 		lib.transcode(workers)
+	else:
+		for name in sorted(Library.list_names()):
+			lib = Library(name)
+			print "  [",name,"]"
+			lib.clean_tree()
+			lib.transcode(workers)
 
 	if Settings.properties["multithreaded"]:
 		workers.close()
