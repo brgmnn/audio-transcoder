@@ -43,6 +43,13 @@ class Settings:
 		except IOError:
 			print >> sys.stderr, "Error: Failed to save settings."
 
+#*		Path
+#*	Really just to hold exceptions
+#*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*#
+class Path:
+	class AlreadyExists(Exception):
+		pass
+
 #*		Library
 #*	handles each library of audio files.
 #*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*#
@@ -118,7 +125,7 @@ class Library:
 				(self.id, os.path.relpath(path, self.source)))
 			dbc.commit()
 		except sqlite3.IntegrityError:
-			raise PathAlreadyExists()
+			raise Path.AlreadyExists()
 			print >> sys.stderr, "Error: Path already in library database!"
 			return 1
 		return 0
@@ -562,7 +569,7 @@ if __name__ == "__main__":
 		print >> sys.stderr, "Error: Path is outside of the library source path."
 		print >> sys.stderr, "  source =",e.source
 		print >> sys.stderr, "  path =",e.path
-	except PathAlreadyExists:
+	except Path.AlreadyExists:
 		print >> sys.stderr, "Error: Path already in library database!"
 
 	dbc.close()
