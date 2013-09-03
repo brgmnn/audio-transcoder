@@ -56,12 +56,13 @@ class Path:
 class Library:
 	# Exceptions
 	class NotFound(Exception):
-		def __init__(self, name):
-			self.name = name
+		pass
 	class OutsideSource(Exception):
 		def __init__(self, source, path):
 			self.source = source
 			self.path = path
+	class AlreadyExists(Exception):
+		pass
 
 	def __init__(self, *args, **kwargs):
 		if len(args) == 1:
@@ -77,7 +78,7 @@ class Library:
 				self.cexts = row["copy_ext"].split(" ")
 				self.paths = []
 			except TypeError:
-				raise Library.NotFound(args[0])
+				raise Library.NotFound
 		else:
 			self.name = args[0]
 			self.source = os.path.abspath(args[1])
@@ -100,8 +101,7 @@ class Library:
 					(self.name,)).fetchone()["id"]
 				dbc.commit()
 			except sqlite3.IntegrityError:
-				print >> sys.stderr, "Error: Library named '"+self.name+"' already exists."
-				sys.exit(1)
+				raise Library.AlreadyExists
 
 	def __str__(self):
 		val = dbc.execute("SELECT COUNT(path) FROM paths WHERE lid=?", (self.id,)).fetchone()[0]
@@ -125,7 +125,7 @@ class Library:
 				(self.id, os.path.relpath(path, self.source)))
 			dbc.commit()
 		except sqlite3.IntegrityError:
-			raise Path.AlreadyExists()
+			raise Path.AlreadyExists
 			print >> sys.stderr, "Error: Path already in library database!"
 			return 1
 		return 0
@@ -323,7 +323,7 @@ class Library:
 			dbc.commit()
 			print "Deleted library '"+name+"'."
 		except TypeError:
-			raise Library.NotFound(name)
+			raise Library.NotFound
 
 # worker thread to transcode a single item
 def transcode_worker(script_path, src, dst):
@@ -563,8 +563,10 @@ if __name__ == "__main__":
 	
 	try:
 		commands[args.cmd](args)
-	except Library.NotFound as e:
-		print >> sys.stderr, "Error: No library named",repr(e.name),"in database."
+	except Library.AlreadyExists:
+		print >> sys.stderr, "Error: A library with that name already exists."
+	except Library.NotFound:
+		print >> sys.stderr, "Error: No library with that named in the database."
 	except Library.OutsideSource as e:
 		print >> sys.stderr, "Error: Path is outside of the library source path."
 		print >> sys.stderr, "  source =",e.source
