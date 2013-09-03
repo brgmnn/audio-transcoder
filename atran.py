@@ -28,7 +28,8 @@ class Settings:
 			values = json.load(open("settings.json", "rb"))
 			Settings.properties = dict(defaults.items() + values.items())
 		except IOError:
-			print "Failed to open one of the settings files. Attempting to create it now..."
+			print >> sys.stderr, "Error: Failed to open one of the settings files. Attempting to \
+				create it now..."
 			Settings.save()
 		return Settings.properties
 
@@ -48,9 +49,7 @@ class Settings:
 class Library:
 	def __init__(self, *args, **kwargs):
 		if len(args) == 1:
-			c = dbc.cursor()
-			c.execute("SELECT * FROM libraries WHERE name=?", (args[0],))
-			row = c.fetchone()
+			row = dbc.execute("SELECT * FROM libraries WHERE name=?", (args[0],)).fetchone()
 
 			try:
 				self.id = row["id"]
@@ -62,7 +61,7 @@ class Library:
 				self.cexts = row["copy_ext"].split(" ")
 				self.paths = []
 			except TypeError:
-				print "Could not find library named '"+args[0]+"' in database."
+				print >> sys.stderr, "Error: No library named '"+args[0]+"' in database."
 				sys.exit(1)
 		else:
 			self.name = args[0]
@@ -73,19 +72,22 @@ class Library:
 			self.exts = [e for e in Settings.properties["default_exts"]]
 			self.cexts = [e for e in Settings.properties["default_copy_exts"]]
 			
-			c = dbc.cursor()
-			c.execute("INSERT INTO libraries VALUES (NULL,?,?,?,?,?,?,?)",
-				(	self.name,
-					self.source,
-					self.target,
-					self.script_path,
-					self.exts[0],
-					self.exts[1],
-					ssv_list(self.cexts) )
-				)
-			c.execute("SELECT id FROM libraries WHERE name=?", (self.name,))
-			self.id = c.fetchone()["id"]
-			dbc.commit()
+			try:
+				dbc.execute("INSERT INTO libraries VALUES (NULL,?,?,?,?,?,?,?)",
+					(	self.name,
+						self.source,
+						self.target,
+						self.script_path,
+						self.exts[0],
+						self.exts[1],
+						ssv_list(self.cexts) )
+					)
+				self.id = dbc.execute("SELECT id FROM libraries WHERE name=?", \
+					(self.name,)).fetchone()["id"]
+				dbc.commit()
+			except sqlite3.IntegrityError:
+				print >> sys.stderr, "Error: Library named '"+self.name+"' already exists."
+				sys.exit(1)
 
 	def __str__(self):
 		val = dbc.execute("SELECT COUNT(path) FROM paths WHERE lid=?", (self.id,)).fetchone()[0]
@@ -102,9 +104,9 @@ class Library:
 		path = os.path.abspath(self.check_path(path))
 
 		if not path.startswith(self.source):
-			print "paths dont match"
-			print self.source
-			print path
+			print >> sys.stderr, "Error: Path is outside of the library source path."
+			print >> sys.stderr, "       Library source:",self.source
+			print >> sys.stderr, "       Failed path:",path
 			return 1
 
 		try:
@@ -112,7 +114,7 @@ class Library:
 				(self.id, os.path.relpath(path, self.source)))
 			dbc.commit()
 		except sqlite3.IntegrityError:
-			print "path already in database!"
+			print >> sys.stderr, "Error: Path already in library database!"
 			return 1
 		return 0
 
@@ -121,7 +123,9 @@ class Library:
 		path = os.path.abspath(self.check_path(path))
 
 		if not path.startswith(self.source):
-			print "Path not under root!"
+			print >> sys.stderr, "Error: Path is outside of the library source path!"
+			print >> sys.stderr, "       Library source:",self.source
+			print >> sys.stderr, "       Failed path:",path
 			return 1
 
 		dbc.execute("DELETE FROM paths WHERE lid=? AND path=?", \
@@ -134,7 +138,9 @@ class Library:
 		prefix = os.path.abspath(self.check_path(prefix))
 
 		if not prefix.startswith(self.source):
-			print "Path not under root!"
+			print >> sys.stderr, "Error: Path is outside of the library source path!"
+			print >> sys.stderr, "       Library source:",self.source
+			print >> sys.stderr, "       Failed path:",prefix
 			return 1
 
 		dbc.execute("DELETE FROM paths WHERE lid=? AND path LIKE ?", \
@@ -311,7 +317,7 @@ class Library:
 			dbc.commit()
 			print "Deleted library '"+name+"'."
 		except TypeError:
-			print "Library '"+name+"' does not exist."
+			print >> sys.stderr, "Error: Library '"+name+"' does not exist."
 
 # worker thread to transcode a single item
 def transcode_worker(script_path, src, dst):
