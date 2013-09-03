@@ -125,13 +125,25 @@ class Library:
 				(self.id, os.path.relpath(path, self.source)))
 			dbc.commit()
 		except sqlite3.IntegrityError:
-			raise Path.AlreadyExists
+			# raise Path.AlreadyExists
 			print >> sys.stderr, "Error: Path already in library database!"
 			return 1
 		return 0
 
-	# remove a path from the library
+	# removes all paths under a given root directory
 	def remove_path(self, path):
+		path = os.path.abspath(self.check_path(path))
+
+		if not path.startswith(self.source):
+			raise Library.OutsideSource(self.source, path)
+
+		dbc.execute("DELETE FROM paths WHERE lid=? AND path LIKE ?", \
+			(self.id, os.path.relpath(path, self.source)+"%") )
+		dbc.commit()
+		return 0
+
+	# remove a path from the library
+	def remove_only_path(self, path):
 		path = os.path.abspath(self.check_path(path))
 
 		if not path.startswith(self.source):
@@ -139,18 +151,6 @@ class Library:
 
 		dbc.execute("DELETE FROM paths WHERE lid=? AND path=?", \
 			(self.id, os.path.relpath(path, self.source)))
-		dbc.commit()
-		return 0
-
-	# removes all paths under a given root directory
-	def remove_path_prefix(self, prefix):
-		prefix = os.path.abspath(self.check_path(prefix))
-
-		if not prefix.startswith(self.source):
-			raise Library.OutsideSource(self.source, prefix)
-
-		dbc.execute("DELETE FROM paths WHERE lid=? AND path LIKE ?", \
-			(self.id, os.path.relpath(prefix, self.source)+"%") )
 		dbc.commit()
 		return 0
 
@@ -389,13 +389,13 @@ def cmd_path(args):
 		# export paths from a library
 		Library(args.export).export_paths()
 	elif args.remove:
-		# remove a path from a library
+		# remove paths from a library
 		name, path = args.remove
 		Library(name).remove_path(path)
-		# remove paths from a library
-	elif args.remove_tree:
-		name, prefix = args.remove_tree
-		Library(name).remove_path_prefix(prefix)
+	elif args.remove_only:
+		# remove a path from a library
+		name, path = args.remove_only
+		Library(name).remove_only_path(path)
 
 # at the moment just to initialise the profile database.
 def cmd_profile(args):
@@ -530,13 +530,13 @@ if __name__ == "__main__":
 		type=str,
 		dest="remove",
 		metavar=("LIBRARY", "PATH"),
-		help="Remove a path from a library. Does not remove sub-paths under this path. Fails if the path does not exist in the library or if the library does not exist.")
-	p_path.add_argument("--remove-tree", "-rt",
+		help="Remove a path from a library.")
+	p_path.add_argument("--remove-only", "-ro",
 		nargs=2,
 		type=str,
-		dest="remove_tree",
-		metavar=("LIBRARY", "PATH-PREFIX"),
-		help="Removes all paths under PATH-PREFIX from a library.")
+		dest="remove_only",
+		metavar=("LIBRARY", "PATH"),
+		help="Removes exactly the path from the library. Doesn't remove sub-paths under this path.")
 
 	# profile operations
 	p_profile = subparsers.add_parser("profile", help="Configure profile.")
