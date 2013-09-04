@@ -7,6 +7,10 @@ Batch transcode audio files. Some features:
 * Differential. Only transcode the files you have to, don't transcode files that have previously.
 * Copy Files. Copy album art or any other file with your transcoded files selected by file extension.
 
+## Installation ##
+
+How to install.
+
 ## Quick start, or "I just want to transcode my files!" ##
 
 First prepare your script file, or just modify the default one provided.
@@ -39,9 +43,7 @@ The output files will be placed in the same relative paths as they are under the
 
 ## Library Model ##
 
-This section describes the library model used by _atran_.
 The library model is aimed at managing a subset of files where only the subset is to be transcoded.
-
 _Atran_ can have an arbitrary number of libraries.
 Each library has a root source directory and a root target directory as well as a list of tracked paths.
 All paths associated with a library are located under the source directory.
@@ -89,6 +91,30 @@ Calling `atran.py run` with no arguments will process all the libraries in it's 
 
 That's it! A list of all the files being transcoded will appear as they are completed.
 
-### More Examples ###
+## More Examples and the wiki ##
 
+There are more examples and a list of all the functions available with _atran_ in the wiki.
+
+## License ##
+
+The MIT License (MIT)
+
+Copyright (c) 2013 Daniel Bergmann
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
