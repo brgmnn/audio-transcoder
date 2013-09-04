@@ -5,7 +5,7 @@ Batch transcode audio files organised in libraries
 ## Quick start, or "I just want to transcode my files!" ##
 
 First prepare your script file, or just modify the default one provided.
-Your script file will be called on each item to be transcoded and will be called with `./your-script.sh *source_file* *output_file*`.
+Your script file will be called on each file to be transcoded individually and will be called with `./your-script.sh *source_file* *output_file*`.
 Here is the contents of the default script file:
 
 	#!/bin/sh
@@ -14,6 +14,20 @@ Here is the contents of the default script file:
 Very simple, with `$1` containing the source file and `$2` containing the output file.
 This script encodes `$1` using the vorbis encoder at q=5 and places the output in `$2`.
 You will need vorbis-tools installed to use this default script.
+If you are not sure about how your script file should look like, there are several example scripts provided in the `encoders` folder.
+
+Next modify `settings.json` to set the source file extension and target file extension.
+If you want to transcode _.wav_ files to _.mp3_'s then edit `settings.json` to look like:
+
+	{"default_exts": [".wav", ".mp3"]}
+
+The source extension is the first item in the list and the target extension is the second.
+
+Finally run the Audio Transcoder with:
+
+	./atran.py run *source_folder* *output_folder*
+
+That's it! As the transcoder runs it will print out the files it has finished.
 
 ## Examples ##
 
