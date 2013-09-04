@@ -16,18 +16,21 @@ This script encodes `$1` using the vorbis encoder at q=5 and places the output i
 You will need vorbis-tools installed to use this default script.
 If you are not sure about how your script file should look like, there are several example scripts provided in the `encoders` folder.
 
-Next modify `settings.json` to set the source file extension and target file extension.
-If you want to transcode _.wav_ files to _.mp3_'s then edit `settings.json` to look like:
+Next modify `settings.json` to set the source file extension and output file extension.
+If you want to transcode _.wav_ files to _.mp3_ files then edit `settings.json` to look like:
 
 	{"default_exts": [".wav", ".mp3"]}
 
-The source extension is the first item in the list and the target extension is the second.
+The source file extension is the first item in the list and the output file extension is the second.
 
 Finally run the Audio Transcoder with:
 
 	./atran.py run *source_folder* *output_folder*
 
 That's it! As the transcoder runs it will print out the files it has finished.
+
+The transcoder will scan through the source folder and will transcode all files that it finds with the source file extension.
+The output files will be placed in the same relative paths as they are under the source folder with the same name but with the output file extension.
 
 ## Examples ##
 
