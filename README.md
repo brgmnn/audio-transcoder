@@ -14,11 +14,11 @@ Your script file will be called on each file to be transcoded individually and w
 Here is the contents of the default script file:
 
 	#!/bin/sh
-	oggenc -q 5 "$1" -o "$2"
+	lame -V 0 "$1" "$2"
 
 Very simple, `$1` is the source file path and `$2` is the output file path.
-This script encodes `$1` using the vorbis encoder at q=5 and places the output in `$2`.
-You will need vorbis-tools installed to use this default script.
+This script encodes `$1` using the lame mp3 encoder with variable bitrate quality 0 and places the output in `$2`.
+You will need lame installed to use this default script.
 If you are not sure about how your script file should look like, there are several example scripts provided in the `encoders` folder.
 
 Next modify `settings.json` to set the source file extension and output file extension.
@@ -37,32 +37,52 @@ That's it! As the transcoder runs it will print out the files it has finished.
 The transcoder will scan through the source folder and will transcode all files that it finds with the source file extension.
 The output files will be placed in the same relative paths as they are under the source folder with the same name but with the output file extension.
 
-## Examples ##
+## Library Model ##
 
-Examples usage
+This section describes the library model used by _atran_.
+The library model is aimed at managing a subset of files where only the subset is to be transcoded.
 
-### Libraries Explained ###
-
-Collections of files are organised in to libraries.
-Each library has a root source directory and a root target directory.
-All files to be transcoded should be located under the root source directory.
-After transcoding the output files will be placed in the root target directory under the same relative path as their corresponding source files.
-However not all files under the root source directory must necessarily be transcoded.
-Each library has a list of paths which are files or whole folders under the root source directory which are to be transcoded.
-Only the paths in the paths list are transcoded.
-As well as transcoding files, the library will copy files (with specified file extensions) to the root target directory (think album art that you want copied over).
-
-You can have as many libraries as you want, with no restriction on how they overlap with source roots or paths. It is advisable to set each libraries target root to be a unique directory.
+_Atran_ can have an arbitrary number of libraries.
+Each library has a root source directory and a root target directory as well as a list of tracked paths.
+All paths associated with a library are located under the source directory.
+Only the list of tracked paths will be transcoded from the source directory.
+Other files will be ignored.
+Transcoded files will be placed in the target directory in the same relative path as their source counterpart.
+As well as transcoding files, the library can also copy files (selected by file extension) to the target directory (think album art that you want copied over).
 
 #### Example ####
 
-I have a collection of FLAC audio files representing my music collection on my desktop. However I want to listen to some of these files on my smartphone. I want a subset of my music library to be transcoded to OGG vorbis to conserve space on my moderate SD card. I begin by executing:
+I have a music library of WAV files.
+However I want to listen to some of these files on my smartphone.
+I want a subset consisting of my favourite tunes to be transcoded to MP3 to conserve space on my moderately small SD card.
+I begin by executing (if you see a warning about missing a database file, don't worry a new database file will be automatically created):
 
-    ./transcode.py --add-library music ~/Music ~/PhoneMusic
+    ./atran.py library --new music ~/Music /media/smartphone/Music
 
-This creates a new library called "music" with a root source directory `~/Music` and a root target directory `~/PhoneMusic`. I don't want all of my audio files transcoded so I add some paths to my "music" library. Paths not under the root source directory `~/Music` will fail. The shorthand `~~/` can be used to specify a path relative to the libraries root source directory. Paths can be either directories or files. In the case of a directory, _all_ valid files underneath that directory will be transcoded. I add some paths:
+This creates a new library called "music" with a root source directory `~/Music` and a root target directory `/media/smartphone/Music`.
+I don't want all of my audio files transcoded so I add some paths to my library "music".
+Paths not under the root source directory `~/Music` will fail.
+The shorthand `~~/` can be used to specify a path relative to the libraries root source directory.
+Paths can be either directories or files (files given should be valid files to be transcoded).
+In the case of a directory, _all_ valid files underneath that directory will be transcoded.
+I add some folders and files:
 
     ./atran.py path --add music ~/Music/Muse/Showbiz/
     ./atran.py path --add music ~/Music/Muse/Absolution
     ./atran.py path --add music ~~/Bach
-    ./atran.py path --add music ~~/
+    ./atran.py path --add music "~~/Flo Rida/Low.wav"
+
+Next I decide that I also want my album art to be copied over to my phone as well.
+I want all _.jpg_ files under any paths to be copied so I add the _.jpg_ extension to the "music" library *copy extension list*, which is just a list of all the file extensions to be copied over.
+
+	./atran.py library --add-copy-ext music .jpg
+
+Great! Now I want to transcode the files so I run:
+
+	./atran.py run
+
+Calling `atran.py run` with no arguments will process all the libraries in it's database. Alternatively to explicitly only process the "music" library run:
+
+	./atran.py run music
+
+That's it! A list of all the files being transcoded will appear as they are completed.
