@@ -19,14 +19,27 @@ def ssv_list(lst):
 #*	holds the global settings for the transcoder.
 #*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*#
 class Settings:
-	properties = dict()
+	properties = {
+		"default_copy_exts": [
+			".bmp",
+			".jpeg",
+			".jpg",
+			".png"
+		],
+		"default_exts": [
+			".wav",
+			".mp3"
+		],
+		"default_script_path": "encoders/skip.sh",
+		"multithreaded": True,
+		"cores": -1
+	}
 
 	@staticmethod
 	def open():
 		try:
-			defaults = json.load(open("default-settings.json", "rb"))
 			values = json.load(open("settings.json", "rb"))
-			Settings.properties = dict(defaults.items() + values.items())
+			Settings.properties = dict(Settings.properties.items() + values.items())
 		except IOError:
 			print >> sys.stderr, "Error: Failed to open one of the settings files. Attempting to \
 				create it now..."
@@ -579,6 +592,7 @@ if __name__ == "__main__":
 
 	args = ap.parse_args()
 	settings = Settings.open()
+	print settings
 
 	commands = {
 		"library": cmd_library,
