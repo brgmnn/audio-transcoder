@@ -50,7 +50,9 @@ Other files will be ignored.
 Transcoded files will be placed in the target directory in the same relative path as their source counterpart.
 As well as transcoding files, the library can also copy files (selected by file extension) to the target directory (think album art that you want copied over).
 
-#### Example ####
+## Example ##
+
+### Library basics ###
 
 I have a music library of WAV files.
 However I want to listen to some of these files on my smartphone.
@@ -86,3 +88,7 @@ Calling `atran.py run` with no arguments will process all the libraries in it's 
 	./atran.py run music
 
 That's it! A list of all the files being transcoded will appear as they are completed.
+
+### More Examples ###
+
+
