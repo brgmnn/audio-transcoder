@@ -1,6 +1,11 @@
 # Audio Transcoder #
 
-Batch transcode audio files organised in libraries
+Batch transcode audio files. Some features:
+
+* Multithreaded. Transcode large numbers of files faster.
+* Libraries. Organise and transcode only a subset of files under a directory, selecting individual files or whole folders.
+* Differential. Only transcode the files you have to, don't transcode files that have previously.
+* Copy Files. Copy album art or any other file with your transcoded files selected by file extension.
 
 ## Quick start, or "I just want to transcode my files!" ##
 
@@ -11,7 +16,7 @@ Here is the contents of the default script file:
 	#!/bin/sh
 	oggenc -q 5 "$1" -o "$2"
 
-Very simple, with `$1` containing the source file and `$2` containing the output file.
+Very simple, `$1` is the source file path and `$2` is the output file path.
 This script encodes `$1` using the vorbis encoder at q=5 and places the output in `$2`.
 You will need vorbis-tools installed to use this default script.
 If you are not sure about how your script file should look like, there are several example scripts provided in the `encoders` folder.
