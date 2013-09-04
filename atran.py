@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import multiprocessing as mp, os, shutil, subprocess, sys, time, argparse, pickle, StringIO
+import multiprocessing, os, shutil, subprocess, sys, time, argparse, pickle, StringIO
 import fnmatch, re, json, sqlite3
 from sets import Set
 
@@ -66,6 +66,7 @@ class Library:
 
 	def __init__(self, *args, **kwargs):
 		if len(args) == 1:
+			# fetch an existing library from the database and create a new Library object for it.
 			row = dbc.execute("SELECT * FROM libraries WHERE name=?", (args[0],)).fetchone()
 
 			try:
@@ -90,6 +91,7 @@ class Library:
 			self.exts = [e for e in Settings.properties["default_exts"]]
 			self.cexts = [e for e in Settings.properties["default_copy_exts"]]
 		else:
+			# create a new Library object and store it as a new library in the database.
 			self.name = args[0]
 			self.source = os.path.abspath(args[1])
 			self.target = os.path.abspath(args[2])
@@ -125,42 +127,26 @@ class Library:
 
 	# adds a path to the library
 	def add_path(self, path):
-		path = os.path.abspath(self.check_path(path))
-
-		if not path.startswith(self.source):
-			raise Library.OutsideSource(self.source, path)
-
+		path = self.check_path(path)
 		try:
-			dbc.execute("INSERT INTO paths VALUES (NULL,?,?)", \
-				(self.id, os.path.relpath(path, self.source)))
+			dbc.execute("INSERT INTO paths VALUES (NULL,?,?)", (self.id, path))
 			dbc.commit()
 		except sqlite3.IntegrityError:
-			# raise Path.AlreadyExists
 			print >> sys.stderr, "Error: Path already in library database!"
 			return 1
 		return 0
 
 	# removes all paths under a given root directory
 	def remove_path(self, path):
-		path = os.path.abspath(self.check_path(path))
-
-		if not path.startswith(self.source):
-			raise Library.OutsideSource(self.source, path)
-
-		dbc.execute("DELETE FROM paths WHERE lid=? AND path LIKE ?", \
-			(self.id, os.path.relpath(path, self.source)+"%") )
+		path = self.check_path(path)
+		dbc.execute("DELETE FROM paths WHERE lid=? AND path LIKE ?", (self.id, path+"%"))
 		dbc.commit()
 		return 0
 
 	# remove a path from the library
 	def remove_only_path(self, path):
-		path = os.path.abspath(self.check_path(path))
-
-		if not path.startswith(self.source):
-			raise Library.OutsideSource(self.source, path)
-
-		dbc.execute("DELETE FROM paths WHERE lid=? AND path=?", \
-			(self.id, os.path.relpath(path, self.source)))
+		path = self.check_path(path)
+		dbc.execute("DELETE FROM paths WHERE lid=? AND path=?", (self.id, path))
 		dbc.commit()
 		return 0
 
@@ -211,8 +197,13 @@ class Library:
 	# checks a directory and optionally places in the libraries source dir
 	def check_path(self, path):
 		if path.startswith("~~/"):
-			return os.path.join(self.source, path[3:])
-		return path
+			return path[3:]
+		
+		path = os.path.abspath(path)
+		if not path.startswith(self.source):
+			raise Library.OutsideSource(self.source, path)
+
+		return os.path.relpath(path, self.source)
 
 	# transcode everything that needs to be in the library
 	def transcode(self, workers):
@@ -442,15 +433,15 @@ def cmd_profile(args):
 def cmd_run(args):
 	# transcode anything that's missing
 	print "--- Audio Transcoder ---"
-	print "  Workers: "+str(mp.cpu_count())
+	print "  Workers: "+str(multiprocessing.cpu_count())
 	print
 	
 	workers = []
 	if Settings.properties["multithreaded"]:
 		if Settings.properties["cores"] > 1:
-			workers = mp.Pool(Settings.properties["cores"])
+			workers = multiprocessing.Pool(Settings.properties["cores"])
 		else:
-			workers = mp.Pool()
+			workers = multiprocessing.Pool()
 	
 	if len(args.todo) == 1:
 		# only process a specific library
