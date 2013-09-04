@@ -2,7 +2,18 @@
 
 Batch transcode audio files organised in libraries
 
-## Quick start ##
+## Quick start, or "I just want to transcode my files!" ##
+
+First prepare your script file, or just modify the default one provided.
+Your script file will be called on each item to be transcoded and will be called with `./your-script.sh *source_file* *output_file*`.
+Here is the contents of the default script file:
+
+	#!/bin/sh
+	oggenc -q 5 "$1" -o "$2"
+
+Very simple, with `$1` containing the source file and `$2` containing the output file.
+This script encodes `$1` using the vorbis encoder at q=5 and places the output in `$2`.
+You will need vorbis-tools installed to use this default script.
 
 ## Examples ##
 

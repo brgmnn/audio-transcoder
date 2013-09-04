@@ -29,7 +29,7 @@ class Settings:
 			".wav",
 			".mp3"
 		],
-		"default_script_path": "encoders/skip.sh",
+		"default_script_path": "default-script.sh",
 		"multithreaded": True,
 		"cores": -1
 	}
