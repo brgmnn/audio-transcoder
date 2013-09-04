@@ -4,8 +4,7 @@ import multiprocessing, os, shutil, subprocess, sys, time, argparse, pickle, Str
 import fnmatch, re, json, sqlite3
 from sets import Set
 
-dbc = sqlite3.connect("profile.db3")
-dbc.row_factory = sqlite3.Row
+dbc = None
 
 # space separate variable list
 def ssv_list(lst):
@@ -349,8 +348,8 @@ def transcode_worker(script_path, src, dst):
 	p.wait()
 	print "job done: "+dst
 
-#	Tool Commands
-# ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+#*		Tool Commands
+#*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*#
 # edit libraries
 def cmd_library(args):
 	if args.new:
@@ -441,6 +440,7 @@ def cmd_profile(args):
 				FOREIGN KEY (lid) REFERENCES libraries(id))")
 
 		dbc.commit()
+		print "New profile database successfully created."
 
 # default behaviour.
 def cmd_run(args):
@@ -480,12 +480,14 @@ def cmd_run(args):
 		workers.close()
 		workers.join()
 
-#	Main
-# ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+#*		Main
+#*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*#
 if __name__ == "__main__":
 	ap = argparse.ArgumentParser(description="Batch transcoding of audio files")
 	subparsers = ap.add_subparsers()
 
+	#*	Assign arguments
+	#*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*#
 	# list - prints out lists of things
 	p_list = subparsers.add_parser("list", help="List different things")
 	p_list.set_defaults(cmd="list")
@@ -590,9 +592,25 @@ if __name__ == "__main__":
 			directory and the transcoder will process those (with the default settings in \
 			settings.json for a path tuple). Leave empty to process all libraries.")
 
+	#*	Parse arguments, open settings, open database etc.
+	#*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*#
 	args = ap.parse_args()
 	settings = Settings.open()
 
+	# check if the database exists, if it doesn't create a new one automatically, otherwise just
+	# open it
+	if not os.path.exists("profile.db3"):
+		print >> sys.stderr, "Warning: No database file 'profile.db3' found. Creating a new \
+			database..."
+		dbc = sqlite3.connect("profile.db3")
+		ndb = argparse.Namespace()
+		ndb.new = True
+		cmd_profile(ndb)
+	else:
+		dbc = sqlite3.connect("profile.db3")
+	dbc.row_factory = sqlite3.Row
+
+	# commands dictionary holding pointer to the functions
 	commands = {
 		"library": cmd_library,
 		"list": cmd_list,
@@ -601,6 +619,8 @@ if __name__ == "__main__":
 		"run": cmd_run
 	}
 	
+	#*	Try and run, catch exceptions
+	#*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*#
 	try:
 		commands[args.cmd](args)
 	except Library.AlreadyExists:
