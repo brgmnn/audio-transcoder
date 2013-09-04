@@ -592,7 +592,6 @@ if __name__ == "__main__":
 
 	args = ap.parse_args()
 	settings = Settings.open()
-	print settings
 
 	commands = {
 		"library": cmd_library,
