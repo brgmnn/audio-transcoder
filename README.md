@@ -45,7 +45,7 @@ That's it! As the transcoder runs it will print out the files it has finished.
 The transcoder will scan through the source folder and will transcode all files that it finds with the source file extension.
 The output files will be placed in the same relative paths as they are under the source folder with the same name but with the output file extension.
 
-More information on [settings.json](wiki/settings.json)
+More information on [settings.json](github.com/daniel-bergmann/audio-transcoder/wiki/settings.json)
 
 ## Library Model ##
 
