@@ -139,8 +139,7 @@ class Library:
 			dbc.execute("INSERT INTO paths VALUES (NULL,?,?)", (self.id, path))
 			dbc.commit()
 		except sqlite3.IntegrityError:
-			print >> sys.stderr, "Error: Path already in library database!"
-			return 1
+			raise Path.AlreadyExists
 		return 0
 
 	# removes all paths under a given root directory
@@ -425,8 +424,16 @@ def cmd_path(args):
 	elif args.import_paths:
 		# import multiple paths from stdin
 		lib = Library(args.import_paths)
-		for path in sys.stdin:
-			lib.add_path(path[:-1])
+		while True:
+			path = raw_input()
+			if path == "":
+				break
+			try:
+				lib.add_path(path)
+			except Library.OutsideSource:
+				print >> sys.stderr, "Error: Path is outside of the library source path."
+			except Path.AlreadyExists:
+				print >> sys.stderr, "Error: Path already in library database!"
 	elif args.export:
 		# export paths from a library
 		Library(args.export).export_paths()
