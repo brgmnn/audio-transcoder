@@ -678,6 +678,7 @@ if __name__ == "__main__":
 	except KeyboardInterrupt:
 		print >> sys.stderr
 		print >> sys.stderr, "Terminated early from user input."
+		# todo: make this work for multiprocessing
 	except sqlite3.OperationalError as e:
 		print >> sys.stderr, "Error: Sqlite3 encountered a operational error: '"+str(e)+"'"
 
