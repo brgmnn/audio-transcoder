@@ -311,6 +311,7 @@ class Library:
 		d["script_path"] = self.script_path
 		d["exts"] = self.exts
 		d["cexts"] = self.cexts
+		d["paths"] = self.fetch_paths()
 		return json.dumps(d, sort_keys=True, indent=4, separators=(',', ': '))
 
 	# decodes and updates this library from a json string
@@ -378,6 +379,9 @@ def cmd_library(args):
 		# remove all copy extensions
 		name = args.clear_copy
 		Library(name).ext("copy",set="")
+	elif args.export:
+		# export a library to json
+		print Library(args.export).json_encode()
 
 # list libraries or paths of libraries
 def cmd_list(args):
@@ -540,6 +544,11 @@ if __name__ == "__main__":
 		dest="clear_copy",
 		metavar="LIBRARY",
 		help="Clears the copy extension list for a library. After calling this command no files will be copied over from the source to target tree.")
+	p_library.add_argument("--export", "-e",
+		type=str,
+		dest="export",
+		metavar="NAME",
+		help="Export a library to JSON format.")
 
 	# path operations
 	p_path = subparsers.add_parser("path", help="Configure paths for a library.")
