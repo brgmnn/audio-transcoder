@@ -102,7 +102,7 @@ class Library:
 			self.script_path = Settings.properties["default_script_path"].encode('ascii', 'ignore')
 			self.exts = [e for e in Settings.properties["default_exts"]]
 			self.cexts = [e for e in Settings.properties["default_copy_exts"]]
-		else:
+		elif len(args) == 3:
 			# create a new Library object and store it as a new library in the database.
 			self.name = args[0]
 			self.source = os.path.abspath(args[1])
@@ -111,21 +111,15 @@ class Library:
 			self.script_path = Settings.properties["default_script_path"].encode('ascii', 'ignore')
 			self.exts = [e for e in Settings.properties["default_exts"]]
 			self.cexts = [e for e in Settings.properties["default_copy_exts"]]
-			
-			try:
-				dbc.execute("INSERT INTO libraries VALUES (NULL,?,?,?,?,?,?,?)", (
-					self.name,
-					self.source,
-					self.target,
-					self.script_path,
-					self.exts[0],
-					self.exts[1],
-					ssv_list(self.cexts) ))
-				self.id = dbc.execute("SELECT id FROM libraries WHERE name=?", \
-					(self.name,)).fetchone()["id"]
-				dbc.commit()
-			except sqlite3.IntegrityError:
-				raise Library.AlreadyExists
+
+			self.save()
+		else:
+			# uninitialised library. used as a base to import a library to.
+			self.id = -1
+			self.name = ":uninitialised:"
+			self.script_path = Settings.properties["default_script_path"].encode('ascii', 'ignore')
+			self.exts = [e for e in Settings.properties["default_exts"]]
+			self.cexts = [e for e in Settings.properties["default_copy_exts"]]
 
 	def __str__(self):
 		val = dbc.execute("SELECT COUNT(path) FROM paths WHERE lid=?", (self.id,)).fetchone()[0]
@@ -138,8 +132,9 @@ class Library:
 			+"  copy exts   = "+str(self.cexts);
 
 	# adds a path to the library
-	def add_path(self, path):
-		path = self.check_path(path)
+	def add_path(self, path, check=True):
+		if check:
+			path = self.check_path(path)
 		try:
 			dbc.execute("INSERT INTO paths VALUES (NULL,?,?)", (self.id, path))
 			dbc.commit()
@@ -324,6 +319,27 @@ class Library:
 		self.script_path = d["script_path"]
 		self.exts = d["exts"]
 		self.cexts = d["cexts"]
+		self.paths = d["paths"]
+
+	# save a library into the SQL database
+	def save(self):
+		try:
+			dbc.execute("INSERT INTO libraries VALUES (NULL,?,?,?,?,?,?,?)", (
+				self.name,
+				self.source,
+				self.target,
+				self.script_path,
+				self.exts[0],
+				self.exts[1],
+				ssv_list(self.cexts) ))
+			self.id = dbc.execute("SELECT id FROM libraries WHERE name=?", \
+				(self.name,)).fetchone()["id"]
+			dbc.commit()
+		except sqlite3.IntegrityError:
+			raise Library.AlreadyExists
+
+		for path in self.paths:
+			self.add_path(path, False)
 
 	# lists the names of all the libraries
 	@staticmethod
@@ -382,6 +398,12 @@ def cmd_library(args):
 	elif args.export:
 		# export a library to json
 		print Library(args.export).json_encode()
+	elif args.import_lib:
+		# import a library from json
+		json = sys.stdin.read()
+		lib = Library()
+		lib.json_decode(json)
+		lib.save()
 
 # list libraries or paths of libraries
 def cmd_list(args):
@@ -549,6 +571,10 @@ if __name__ == "__main__":
 		dest="export",
 		metavar="NAME",
 		help="Export a library to JSON format.")
+	p_library.add_argument("--import", "-i",
+		action="store_true",
+		dest="import_lib",
+		help="Import a library from JSON format.")
 
 	# path operations
 	p_path = subparsers.add_parser("path", help="Configure paths for a library.")
@@ -645,5 +671,7 @@ if __name__ == "__main__":
 	except KeyboardInterrupt:
 		print >> sys.stderr
 		print >> sys.stderr, "Terminated early from user input."
+	except sqlite3.OperationalError as e:
+		print >> sys.stderr, "Error: Sqlite3 encountered a operational error: '"+str(e)+"'"
 
 	dbc.close()
