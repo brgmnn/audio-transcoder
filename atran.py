@@ -19,12 +19,7 @@ def ssv_list(lst):
 #*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*#
 class Settings:
 	properties = {
-		"default_copy_exts": [
-			".bmp",
-			".jpeg",
-			".jpg",
-			".png"
-		],
+		"default_copy_exts": [],
 		"default_exts": [
 			".wav",
 			".mp3"
@@ -49,7 +44,7 @@ class Settings:
 	def save():
 		try:
 			Settings.properties["default_copy_exts"].sort()
-			open("composite.json", "wb").write(\
+			open("settings.json", "wb").write(\
 				json.dumps(Settings.properties, sort_keys=True, indent=4,\
 					separators=(',', ': ')))
 		except IOError:

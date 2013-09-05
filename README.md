@@ -25,12 +25,16 @@ This script encodes `$1` using the lame mp3 encoder with variable bitrate qualit
 You will need lame installed to use this default script.
 If you are not sure about how your script file should look like, there are several example scripts provided in the `encoders` folder.
 
-Next modify `settings.json` to set the source file extension and output file extension.
+Next modify `settings.json` to set the source file extension and output file extension as well as the location of your script file.
 If you want to transcode _.wav_ files to _.mp3_ files then edit `settings.json` to look like:
 
-	{"default_exts": [".wav", ".mp3"]}
+	{
+		"default_exts": [".wav", ".mp3"]
+		"default_script_path": "/path/to/my/script.sh"
+	}
 
-The source file extension is the first item in the list and the output file extension is the second.
+The source file extension is the first item in the list and the output file extension is the second for the `default_exts` key.
+Note that if you just modified the default script which comes with atran (default-script.sh) then you don't need to set the `default_script_path` key.
 
 Finally run the Audio Transcoder with:
 
@@ -40,6 +44,8 @@ That's it! As the transcoder runs it will print out the files it has finished.
 
 The transcoder will scan through the source folder and will transcode all files that it finds with the source file extension.
 The output files will be placed in the same relative paths as they are under the source folder with the same name but with the output file extension.
+
+More information on [[settings.json]]
 
 ## Library Model ##
 
