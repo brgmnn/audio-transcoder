@@ -7,12 +7,12 @@ from sets import Set
 dbc = None
 
 # space separate variable list
-def ssv_list(lst):
+def ssv_list(lst, separator=" "):
 	output = StringIO.StringIO()
 	for item in lst:
 		output.write(item)
-		output.write(" ")
-	return output.getvalue().strip()
+		output.write(separator)
+	return output.getvalue().strip()[:-len(separator.rstrip())]
 
 #*		Settings
 #*	holds the global settings for the transcoder.
@@ -124,7 +124,7 @@ class Library:
 			+"  script path = "+self.script_path+"\n" \
 			+"  source ext  = "+self.exts[0]+"\n" \
 			+"  target ext  = "+self.exts[1]+"\n" \
-			+"  copy exts   = "+str(self.cexts);
+			+"  copy exts   = "+ssv_list(self.cexts, ", ");
 
 	# adds a path to the library
 	def add_path(self, path, check=True):
