@@ -424,15 +424,18 @@ def cmd_path(args):
 		# import multiple paths from stdin
 		lib = Library(args.import_paths)
 		while True:
-			path = raw_input()
-			if path == "":
-				break
 			try:
-				lib.add_path(path)
-			except Library.OutsideSource:
-				print >> sys.stderr, "Error: Path is outside of the library source path."
-			except Path.AlreadyExists:
-				print >> sys.stderr, "Error: Path already in library database!"
+				path = raw_input()
+				if path == "":
+					break
+				try:
+					lib.add_path(path)
+				except Library.OutsideSource:
+					print >> sys.stderr, "Error: Path is outside of the library source path."
+				except Path.AlreadyExists:
+					print >> sys.stderr, "Error: Path already in library database!"
+			except EOFError:
+				break
 	elif args.export:
 		# export paths from a library
 		Library(args.export).export_paths()
