@@ -7,12 +7,16 @@ from sets import Set
 dbc = None
 
 # space separate variable list
-def ssv_list(lst, separator=" "):
+def str_list(lst, separator=" "):
 	output = StringIO.StringIO()
 	for item in lst:
 		output.write(item)
 		output.write(separator)
-	return output.getvalue().strip()[:-len(separator.rstrip())]
+	if len(separator.rstrip()) > 0:
+		return output.getvalue().strip()[:-len(separator.rstrip())]
+	else:
+		return output.getvalue().strip()
+
 
 #*		Settings
 #*	holds the global settings for the transcoder.
@@ -124,7 +128,7 @@ class Library:
 			+"  script path = "+self.script_path+"\n" \
 			+"  source ext  = "+self.exts[0]+"\n" \
 			+"  target ext  = "+self.exts[1]+"\n" \
-			+"  copy exts   = "+ssv_list(self.cexts, ", ");
+			+"  copy exts   = "+str_list(self.cexts, ", ");
 
 	# adds a path to the library
 	def add_path(self, path, check=True):
@@ -169,10 +173,10 @@ class Library:
 				new_cexts = list(set(new_cexts))
 				new_cexts.sort()
 				dbc.execute("UPDATE libraries SET copy_ext=? WHERE id=?", \
-					(ssv_list(new_cexts), self.id))
+					(str_list(new_cexts), self.id))
 			elif "set" in kwargs:
 				dbc.execute("UPDATE libraries SET copy_ext=? WHERE id=?", \
-					(ssv_list(kwargs["set"]), self.id))
+					(str_list(kwargs["set"]), self.id))
 		else:
 			return
 		dbc.commit()
@@ -325,7 +329,7 @@ class Library:
 				self.script_path,
 				self.exts[0],
 				self.exts[1],
-				ssv_list(self.cexts) ))
+				str_list(self.cexts) ))
 			self.id = dbc.execute("SELECT id FROM libraries WHERE name=?", \
 				(self.name,)).fetchone()["id"]
 			dbc.commit()
