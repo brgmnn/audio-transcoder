@@ -231,10 +231,11 @@ class Library:
 					if not os.path.isdir(os.path.dirname(dst)):
 						os.makedirs(os.path.dirname(dst))
 					
-					if Settings.properties["multithreaded"]:
-						workers.apply_async(transcode_worker, (self.script_path, src, dst))
-					else:
-						transcode_worker(self.script_path, src, dst)
+					if not os.path.exists(dst):
+						if Settings.properties["multithreaded"]:
+							workers.apply_async(transcode_worker, (self.script_path, src, dst))
+						else:
+							transcode_worker(self.script_path, src, dst)
 				else:
 					if not os.path.isdir(os.path.dirname(dst)):
 						os.makedirs(os.path.dirname(dst))
@@ -259,10 +260,11 @@ class Library:
 								if not os.path.isdir(os.path.dirname(d)):
 									os.makedirs(os.path.dirname(d))
 								
-								if Settings.properties["multithreaded"]:
-									workers.apply_async(transcode_worker, (self.script_path, s, d))
-								else:
-									transcode_worker(self.script_path, s, d)
+								if not os.path.exists(d):
+									if Settings.properties["multithreaded"]:
+										workers.apply_async(transcode_worker, (self.script_path, s, d))
+									else:
+										transcode_worker(self.script_path, s, d)
 							else:
 								if not os.path.isdir(os.path.dirname(d)):
 									os.makedirs(os.path.dirname(d))
@@ -361,7 +363,7 @@ def transcode_worker(script_path, src, dst):
 	devnull = open('/dev/null', 'w')
 	p = subprocess.Popen([script_path,src,dst], stdout=devnull, stderr=devnull)
 	p.wait()
-	print "job done: "+dst
+	print "done: "+dst
 
 #*		Tool Commands
 #*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*#
