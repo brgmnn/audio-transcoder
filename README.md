@@ -10,6 +10,7 @@ Batch transcode audio files. Some features:
 ## Installation ##
 
 How to install.
+Todo: Install shortcut to /usr/bin or equivalent?
 
 ## Quick start, or "I just want to transcode my files!" ##
 
