@@ -358,6 +358,9 @@ class Library:
 		except TypeError:
 			raise Library.NotFound
 
+
+#*		Public function, worker
+#*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*#
 # worker thread to transcode a single item
 def transcode_worker(script_path, src, dst):
 	devnull = open('/dev/null', 'w')
@@ -694,3 +697,5 @@ if __name__ == "__main__":
 		print >> sys.stderr, "Error: Sqlite3 encountered a operational error: '"+str(e)+"'"
 
 	dbc.close()
+
+
