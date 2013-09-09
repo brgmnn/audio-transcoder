@@ -211,7 +211,7 @@ class Library:
 		return os.path.relpath(path, self.source)
 
 	# transcode everything that needs to be in the library
-	def transcode(self, workers):
+	def transcode(self, workers, force=False):
 		seen = set()
 
 		self.items = 0;
@@ -231,7 +231,7 @@ class Library:
 					if not os.path.isdir(os.path.dirname(dst)):
 						os.makedirs(os.path.dirname(dst))
 					
-					if not os.path.exists(dst):
+					if not os.path.exists(dst) or force:
 						if Settings.properties["multithreaded"]:
 							workers.apply_async(transcode_worker, (self.script_path, src, dst))
 						else:
@@ -260,7 +260,7 @@ class Library:
 								if not os.path.isdir(os.path.dirname(d)):
 									os.makedirs(os.path.dirname(d))
 								
-								if not os.path.exists(d):
+								if not os.path.exists(d) or force:
 									if Settings.properties["multithreaded"]:
 										workers.apply_async(transcode_worker, (self.script_path, s, d))
 									else:
@@ -498,20 +498,23 @@ def cmd_run(args):
 		lib = Library(args.todo[0])
 		print "  [",args.todo[0],"]"
 		lib.clean_tree()
-		lib.transcode(workers)
+		lib.transcode(workers, args.force)
 	elif len(args.todo) == 2:
 		# process this as a source, target directory and process all files in it.
 		# only process a specific library
 		lib = Library(args.todo[0], args.todo[1])
 		lib.clean_tree()
-		lib.transcode(workers)
+		lib.transcode(workers, args.force)
 	else:
 		# process all libraries
 		for name in sorted(Library.list_names()):
 			lib = Library(name)
 			print "  [",name,"]"
 			lib.clean_tree()
-			lib.transcode(workers)
+			lib.transcode(workers, args.force)
+
+			if Settings.properties["multithreaded"]:
+				workers.join()
 
 	if Settings.properties["multithreaded"]:
 		workers.close()
@@ -631,6 +634,10 @@ if __name__ == "__main__":
 	# run operations
 	p_run = subparsers.add_parser("run", help="Run the transcoder.")
 	p_run.set_defaults(cmd="run")
+	p_run.add_argument("--force", "-f",
+		action="store_true",
+		dest="force",
+		help="Force all scanned files to be processed even if there is already a target file for it.")
 	p_run.add_argument("todo",
 		nargs="*",
 		type=str,
