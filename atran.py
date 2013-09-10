@@ -212,12 +212,8 @@ class Library:
 
 	# scan the directories for files
 	def scan(self, force=False):
-		seen = set()
 		tr = set()
 		cp = set()
-
-		self.items = 0;
-		self.current = 0;
 
 		if self.id >= 0:
 			self.fetch_paths()
@@ -225,7 +221,7 @@ class Library:
 		for path in self.paths:
 			src = os.path.join(self.source, path)
 
-			if os.path.isfile(src) and src not in seen:
+			if os.path.isfile(src):
 				dst = os.path.join(self.target, path)
 
 				if src[-len(self.exts[0]):] == self.exts[0]:
@@ -239,8 +235,6 @@ class Library:
 					if not os.path.isdir(os.path.dirname(dst)):
 						os.makedirs(os.path.dirname(dst))
 					cp.add((src,dst))
-
-				seen.add(src)
 			else:
 				for root, dirs, files in os.walk(src):
 					files = [os.path.join(root, f) for f in files]
@@ -250,41 +244,40 @@ class Library:
 						sf.extend(fnmatch.filter(files, "*"+c))
 
 					for s in sf:
-						if s not in seen:
-							d = os.path.join(self.target, os.path.relpath(s, self.source))
+						d = os.path.join(self.target, os.path.relpath(s, self.source))
 
-							if s[-len(self.exts[0]):] == self.exts[0]:
-								d = d[:-len(self.exts[0])]+self.exts[1]
-								
-								if not os.path.isdir(os.path.dirname(d)):
-									os.makedirs(os.path.dirname(d))
-								
-								if not os.path.exists(d) or force:
-									tr.add((s,d))
-							else:
-								if not os.path.isdir(os.path.dirname(d)):
-									os.makedirs(os.path.dirname(d))
-								cp.add((s,d))
-
-							seen.add(s)
+						if s[-len(self.exts[0]):] == self.exts[0]:
+							d = d[:-len(self.exts[0])]+self.exts[1]
+							
+							if not os.path.isdir(os.path.dirname(d)):
+								os.makedirs(os.path.dirname(d))
+							
+							if not os.path.exists(d) or force:
+								tr.add((s,d))
+						else:
+							if not os.path.isdir(os.path.dirname(d)):
+								os.makedirs(os.path.dirname(d))
+							cp.add((s,d))
 
 		return (tr, cp)
 
 	# transcode everything that needs to be in the library
 	def transcode(self, workers, force=False):
+		print "scanning for files..."
 		tr, cp = self.scan(force)
 		tr = sorted(list(tr))
 		cp = sorted(list(cp))
+		print "Found",len(tr),"files to transcode,",len(cp),"files to copy."
 
 		for src, dst in tr:
 			if Settings.properties["multithreaded"]:
-				workers.apply_async(transcode_worker, (self.script_path, src, dst))
+				workers.apply_async(transcode_worker, (self.script_path, src, dst, self.target))
 			else:
-				transcode_worker(self.script_path, src, dst)
+				transcode_worker(self.script_path, src, dst, self.target)
 
 		for src, dst in cp:
 			shutil.copy2(src,dst)
-			print "copied:",dst
+			print "c:",os.path.relpath(dst, self.target)
 
 	# cleans the tree of unwanted files
 	def clean_tree(self):
@@ -376,11 +369,11 @@ class Library:
 #*		Public function, worker
 #*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*#
 # worker thread to transcode a single item
-def transcode_worker(script_path, src, dst):
+def transcode_worker(script_path, src, dst, drt):
 	devnull = open('/dev/null', 'w')
 	p = subprocess.Popen([script_path,src,dst], stdout=devnull, stderr=devnull)
 	p.wait()
-	print "done: "+dst
+	print "t:",os.path.relpath(dst, drt)
 
 #*		Tool Commands
 #*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*#
