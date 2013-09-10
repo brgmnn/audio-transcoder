@@ -210,9 +210,11 @@ class Library:
 
 		return os.path.relpath(path, self.source)
 
-	# transcode everything that needs to be in the library
-	def transcode(self, workers, force=False):
+	# scan the directories for files
+	def scan(self, force=False):
 		seen = set()
+		tr = set()
+		cp = set()
 
 		self.items = 0;
 		self.current = 0;
@@ -232,14 +234,11 @@ class Library:
 						os.makedirs(os.path.dirname(dst))
 					
 					if not os.path.exists(dst) or force:
-						if Settings.properties["multithreaded"]:
-							workers.apply_async(transcode_worker, (self.script_path, src, dst))
-						else:
-							transcode_worker(self.script_path, src, dst)
+						tr.add((src,dst))
 				else:
 					if not os.path.isdir(os.path.dirname(dst)):
 						os.makedirs(os.path.dirname(dst))
-					shutil.copy2(src,dst)
+					cp.add((src,dst))
 
 				seen.add(src)
 			else:
@@ -261,16 +260,31 @@ class Library:
 									os.makedirs(os.path.dirname(d))
 								
 								if not os.path.exists(d) or force:
-									if Settings.properties["multithreaded"]:
-										workers.apply_async(transcode_worker, (self.script_path, s, d))
-									else:
-										transcode_worker(self.script_path, s, d)
+									tr.add((s,d))
 							else:
 								if not os.path.isdir(os.path.dirname(d)):
 									os.makedirs(os.path.dirname(d))
-								shutil.copy2(s,d)
+								cp.add((s,d))
 
 							seen.add(s)
+
+		return (tr, cp)
+
+	# transcode everything that needs to be in the library
+	def transcode(self, workers, force=False):
+		tr, cp = self.scan(force)
+		tr = sorted(list(tr))
+		cp = sorted(list(cp))
+
+		for src, dst in tr:
+			if Settings.properties["multithreaded"]:
+				workers.apply_async(transcode_worker, (self.script_path, src, dst))
+			else:
+				transcode_worker(self.script_path, src, dst)
+
+		for src, dst in cp:
+			shutil.copy2(src,dst)
+			print "copied:",dst
 
 	# cleans the tree of unwanted files
 	def clean_tree(self):
