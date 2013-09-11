@@ -214,6 +214,8 @@ class Library:
 	def scan(self, force=False):
 		tr = set()
 		cp = set()
+		tr_skip = 0
+		cp_skip = 0
 
 		if self.id >= 0:
 			self.fetch_paths()
@@ -231,10 +233,15 @@ class Library:
 					
 					if not os.path.exists(dst) or force:
 						tr.add((src,dst))
+					else:
+						tr_skip += 1
 				else:
 					if not os.path.isdir(os.path.dirname(dst)):
 						os.makedirs(os.path.dirname(dst))
-					cp.add((src,dst))
+					if not os.path.exists(dst) or force:
+						cp.add((src,dst))
+					else:
+						cp_skip += 1
 			else:
 				for root, dirs, files in os.walk(src):
 					files = [os.path.join(root, f) for f in files]
@@ -254,20 +261,27 @@ class Library:
 							
 							if not os.path.exists(d) or force:
 								tr.add((s,d))
+							else:
+								tr_skip += 1
 						else:
 							if not os.path.isdir(os.path.dirname(d)):
 								os.makedirs(os.path.dirname(d))
-							cp.add((s,d))
+							if not os.path.exists(d) or force:
+								cp.add((s,d))
+							else:
+								cp_skip += 1
 
-		return (tr, cp)
+		return (tr, cp, tr_skip, cp_skip)
 
 	# transcode everything that needs to be in the library
 	def transcode(self, workers, force=False):
 		print "scanning for files..."
-		tr, cp = self.scan(force)
+		tr, cp, tr_skip, cp_skip = self.scan(force)
 		tr = sorted(list(tr))
 		cp = sorted(list(cp))
-		print "Found",len(tr),"files to transcode,",len(cp),"files to copy."
+		print "Found:"
+		print "  transcode:",len(tr),"files ("+str(tr_skip)+" skipped)"
+		print "  copy:     ",len(cp),"files ("+str(cp_skip)+" skipped)"
 
 		for src, dst in tr:
 			if Settings.properties["multithreaded"]:
