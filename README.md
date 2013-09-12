@@ -14,8 +14,8 @@ Todo: Install shortcut to /usr/bin or equivalent?
 
 ## Quick start, or "I just want to transcode my files!" ##
 
-First prepare your script file, or just modify the default one provided.
-Your script file will be called on each file to be transcoded individually and will be called with `./your-script.sh *source_file* *output_file*`.
+First prepare your [script file](http://github.com/daniel-bergmann/audio-transcoder/wiki/scripts), or just modify the default one provided.
+Your script file will be called on each file to be transcoded individually and will be called with `./your-script.sh [source_file] [output_file]`.
 Here is the contents of the default script file:
 
 	#!/bin/sh
@@ -26,8 +26,8 @@ This script encodes `$1` using the lame mp3 encoder with variable bitrate qualit
 You will need lame installed to use this default script.
 If you are not sure about how your script file should look like, there are several example scripts provided in the `encoders` folder.
 
-Next modify `settings.json` to set the source file extension and output file extension as well as the location of your script file.
-If you want to transcode _.wav_ files to _.mp3_ files then edit `settings.json` to look like:
+Next modify [settings.json](http://github.com/daniel-bergmann/audio-transcoder/wiki/settings.json) to set the source file extension and output file extension as well as the location of your script file.
+If you want to transcode _.wav_ files to _.mp3_ files then edit settings.json to look like:
 
 	{
 		"default_exts": [".wav", ".mp3"]
@@ -35,7 +35,7 @@ If you want to transcode _.wav_ files to _.mp3_ files then edit `settings.json` 
 	}
 
 The source file extension is the first item in the list and the output file extension is the second for the `default_exts` key.
-Note that if you just modified the default script which comes with atran (default-script.sh) then you don't need to set the `default_script_path` key.
+Note that if you just modified the default script which comes with the transcoder (default-script.sh) then you don't need to set the `default_script_path` key.
 
 Finally run the Audio Transcoder with:
 
@@ -51,7 +51,7 @@ More information on [settings.json](http://github.com/daniel-bergmann/audio-tran
 ## Library Model ##
 
 The library model is aimed at managing a subset of files where only the subset is to be transcoded.
-_Atran_ can have an arbitrary number of libraries.
+The audio transcoder can have an arbitrary number of libraries.
 Each library has a root source directory and a root target directory as well as a list of tracked paths.
 All paths associated with a library are located under the source directory.
 Only the list of tracked paths will be transcoded from the source directory.
@@ -100,7 +100,7 @@ That's it! A list of all the files being transcoded will appear as they are comp
 
 ## More Examples and the wiki ##
 
-There are more examples and a list of all the functions available with _atran_ in the wiki.
+There are more examples and a list of all the functions available with the transcoder in the wiki.
 
 ## License ##
 
