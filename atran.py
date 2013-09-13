@@ -271,11 +271,17 @@ class Library:
 		print "  transcode:",len(tr),"files ("+str(tr_skip)+" skipped)"
 		print "  copy:     ",len(cp),"files ("+str(cp_skip)+" skipped)"
 
-		for src, dst in tr:
-			if Settings.properties["multithreaded"]:
-				workers.apply_async(transcode_worker, (self.script_path, src, dst, self.target))
-			else:
+		if Settings.properties["multithreaded"]:
+			workers.map(lambda x: transcode_worker(*x), [p+(self.target,) for p in tr])
+		else:
+			for src, dst in tr:
 				transcode_worker(self.script_path, src, dst, self.target)
+
+		# for src, dst in tr:
+		# 	if Settings.properties["multithreaded"]:
+		# 		workers.apply_async(transcode_worker, (self.script_path, src, dst, self.target))
+		# 	else:
+		# 		transcode_worker(self.script_path, src, dst, self.target)
 
 		for src, dst in cp:
 			shutil.copy2(src,dst)
