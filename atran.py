@@ -272,7 +272,11 @@ class Library:
 		print "  copy:     ",len(cp),"files ("+str(cp_skip)+" skipped)"
 
 		if Settings.properties["multithreaded"]:
-			workers.map(lambda x: transcode_worker(*x), [p+(self.target,) for p in tr])
+			p = workers.map_async(transcode_worker, [(self.script_path,)+p+(self.target,) for p in tr])
+			try:
+				p.get(0xffff)
+			except KeyboardInterrupt:
+				raise
 		else:
 			for src, dst in tr:
 				transcode_worker(self.script_path, src, dst, self.target)
@@ -377,11 +381,15 @@ class Library:
 #*		Public function, worker
 #*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*#
 # worker thread to transcode a single item
-def transcode_worker(script_path, src, dst, drt):
-	devnull = open('/dev/null', 'w')
-	p = subprocess.Popen([script_path,src,dst], stdout=devnull, stderr=devnull)
-	p.wait()
-	print "t:",os.path.relpath(dst, drt)
+# tupe = (script_path, src, dst, drt)
+def transcode_worker(tupe):
+	try:
+		devnull = open('/dev/null', 'w')
+		p = subprocess.Popen([tupe[0],tupe[1],tupe[2]], stdout=devnull, stderr=devnull)
+		p.wait()
+		print "t:",os.path.relpath(tupe[2], tupe[3])
+	except KeyboardInterrupt:
+		pass
 
 #*		Tool Commands
 #*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*#
