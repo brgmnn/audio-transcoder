@@ -9,8 +9,17 @@ Batch transcode audio files. Some features:
 
 ## Installation ##
 
-How to install.
-Todo: Install shortcut to /usr/bin or equivalent?
+Clone this git repo to your computer.
+Then if you want to install the transcoder to your /usr/local/bin folder, execute the install script from the repo folder:
+
+	sudo ./install.sh
+
+This just creates a symbolic link to `atran.py`.
+You can now call the transcoder from any folder with `atran`.
+
+#### Uninstallation ####
+
+Delete the repo folder you have cloned and delete the link in /usr/local/bin if you ran install.sh.
 
 ## Quick start, or "I just want to transcode my files!" ##
 
@@ -39,7 +48,7 @@ Note that if you just modified the default script which comes with the transcode
 
 Finally run the Audio Transcoder with:
 
-	./atran.py run *source_folder* *output_folder*
+	atran run *source_folder* *output_folder*
 
 That's it! As the transcoder runs it will print out the files it has finished.
 
@@ -68,7 +77,7 @@ However I want to listen to some of these files on my smartphone.
 I want a subset consisting of my favourite tunes to be transcoded to MP3 to conserve space on my moderately small SD card.
 I begin by executing (if you see a warning about missing a database file, don't worry a new database file will be automatically created):
 
-    ./atran.py library --new music ~/Music /media/smartphone/Music
+    atran library --new music ~/Music /media/smartphone/Music
 
 This creates a new library called "music" with a root source directory `~/Music` and a root target directory `/media/smartphone/Music`.
 I don't want all of my audio files transcoded so I add some paths to my library "music".
@@ -78,23 +87,23 @@ Paths can be either directories or files (files given should be valid files to b
 In the case of a directory, _all_ valid files underneath that directory will be transcoded.
 I add some folders and files:
 
-    ./atran.py path --add music ~/Music/Muse/Showbiz/
-    ./atran.py path --add music ~/Music/Muse/Absolution
-    ./atran.py path --add music ~~/Bach
-    ./atran.py path --add music "~~/Flo Rida/Low.wav"
+    atran path --add music ~/Music/Muse/Showbiz/
+    atran path --add music ~/Music/Muse/Absolution
+    atran path --add music ~~/Bach
+    atran path --add music "~~/Flo Rida/Low.wav"
 
 Next I decide that I also want my album art to be copied over to my phone as well.
 I want all _.jpg_ files under any paths to be copied so I add the _.jpg_ extension to the "music" library *copy extension list*, which is just a list of all the file extensions to be copied over.
 
-	./atran.py library --add-copy-ext music .jpg
+	atran library --add-copy-ext music .jpg
 
 Great! Now I want to transcode the files so I run:
 
-	./atran.py run
+	atran run
 
 Calling `atran.py run` with no arguments will process all the libraries in it's database. Alternatively to explicitly only process the "music" library run:
 
-	./atran.py run music
+	atran run music
 
 That's it! A list of all the files being transcoded will appear as they are completed.
 
