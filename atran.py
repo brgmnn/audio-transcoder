@@ -4,6 +4,7 @@ import multiprocessing, os, shutil, subprocess, sys, time, argparse, pickle, Str
 import fnmatch, re, json, sqlite3
 from sets import Set
 
+atran_path = os.path.dirname(os.path.realpath(__file__))
 dbc = None
 
 #*		Settings
@@ -24,7 +25,7 @@ class Settings:
 	@staticmethod
 	def open():
 		try:
-			values = json.load(open("settings.json", "rb"))
+			values = json.load(open(os.path.join(atran_path, "settings.json"), "rb"))
 			Settings.properties = dict(Settings.properties.items() + values.items())
 		except IOError:
 			print >> sys.stderr, "Error: Failed to open one of the settings files. Attempting to \
@@ -36,7 +37,7 @@ class Settings:
 	def save():
 		try:
 			Settings.properties["default_copy_exts"].sort()
-			open("settings.json", "wb").write(\
+			open(os.path.join(atran_path, "settings.json"), "wb").write(\
 				json.dumps(Settings.properties, sort_keys=True, indent=4,\
 					separators=(',', ': ')))
 		except IOError:
@@ -281,12 +282,6 @@ class Library:
 			for src, dst in tr:
 				transcode_worker(self.script_path, src, dst, self.target)
 
-		# for src, dst in tr:
-		# 	if Settings.properties["multithreaded"]:
-		# 		workers.apply_async(transcode_worker, (self.script_path, src, dst, self.target))
-		# 	else:
-		# 		transcode_worker(self.script_path, src, dst, self.target)
-
 		for src, dst in cp:
 			shutil.copy2(src,dst)
 			print "c:",os.path.relpath(dst, self.target)
@@ -311,6 +306,7 @@ class Library:
 				except OSError as ex:
 					pass
 
+	# write the progress
 	def write_progress(self):
 		sys.stdout.write("\rdone "+str(self.current)+" / "+str(self.items))
 		sys.stdout.flush()
@@ -480,11 +476,11 @@ def cmd_path(args):
 def cmd_profile(args):
 	if args.new:
 		# creates a new database profile. will delete the contents of an existing "profile.db3"!
-		fp = open("profile.db3", "rw+")
+		fp = open(os.path.join(atran_path, "profile.db3"), "rw+")
 		fp.truncate()
 		fp.close()
 		
-		dbc = sqlite3.connect("profile.db3")
+		dbc = sqlite3.connect(os.path.join(atran_path, "profile.db3"))
 		dbc.execute("CREATE TABLE libraries \
 			(	id INTEGER PRIMARY KEY, \
 				name TEXT, \
@@ -538,9 +534,6 @@ def cmd_run(args):
 			print "  [",name,"]"
 			lib.clean_tree()
 			lib.transcode(workers, args.force)
-
-			if Settings.properties["multithreaded"]:
-				workers.join()
 
 	if Settings.properties["multithreaded"]:
 		workers.close()
@@ -678,7 +671,7 @@ if __name__ == "__main__":
 
 	# check if the database exists, if it doesn't create a new one automatically, otherwise just
 	# open it
-	if not os.path.exists("profile.db3"):
+	if not os.path.exists(os.path.join(atran_path, "profile.db3")):
 		print >> sys.stderr, "Warning: No database file 'profile.db3' found. Creating a new \
 			database..."
 		dbc = sqlite3.connect("profile.db3")
@@ -686,7 +679,7 @@ if __name__ == "__main__":
 		ndb.new = True
 		cmd_profile(ndb)
 	else:
-		dbc = sqlite3.connect("profile.db3")
+		dbc = sqlite3.connect(os.path.join(atran_path, "profile.db3"))
 	dbc.row_factory = sqlite3.Row
 
 	# commands dictionary holding pointer to the functions
