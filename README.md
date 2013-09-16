@@ -17,6 +17,16 @@ Then if you want to install the transcoder to your /usr/local/bin folder, execut
 This just creates a symbolic link to `atran.py`.
 You can now call the transcoder from any folder with `atran`.
 
+#### Requirements ####
+
+* Python 2.7.
+* Bash or similar.
+
+I develop/test primarily on Ubuntu/Linux Mint.
+Atran should run on most Unix like OS's.
+Atran is _not_ tested on Windows!
+However it does run in Cygwin.
+
 #### Uninstallation ####
 
 Delete the repo folder you have cloned and delete the link in /usr/local/bin if you ran install.sh.
