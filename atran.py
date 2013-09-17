@@ -473,8 +473,8 @@ def cmd_path(args):
 		Library(name).remove_only_path(path)
 
 # at the moment just to initialise the profile database.
-def cmd_profile(args):
-	if args.new:
+def cmd_config(args):
+	if args.newdb:
 		# creates a new database profile. will delete the contents of an existing "profile.db3"!
 		fp = open(os.path.join(atran_path, "profile.db3"), "rw+")
 		fp.truncate()
@@ -641,13 +641,13 @@ if __name__ == "__main__":
 		metavar=("LIBRARY", "PATH"),
 		help="Removes exactly the path from the library. Doesn't remove sub-paths under this path.")
 
-	# profile operations
-	p_profile = subparsers.add_parser("profile", help="Configure profile.")
-	p_profile.set_defaults(cmd="profile")
-	p_profile.add_argument("--new", "-cp",
+	# config operations
+	p_config = subparsers.add_parser("config", help="Configure config.")
+	p_config.set_defaults(cmd="config")
+	p_config.add_argument("--new-db",
 		action="store_true",
-		dest="new",
-		help="Creates a new blank profile. A profile contains all libraries, paths and settings \
+		dest="newdb",
+		help="Creates a new blank config. A config contains all libraries, paths and settings \
 			for the application.")
 
 	# run operations
@@ -676,8 +676,8 @@ if __name__ == "__main__":
 			database..."
 		dbc = sqlite3.connect("profile.db3")
 		ndb = argparse.Namespace()
-		ndb.new = True
-		cmd_profile(ndb)
+		ndb.newdb = True
+		cmd_config(ndb)
 	else:
 		dbc = sqlite3.connect(os.path.join(atran_path, "profile.db3"))
 	dbc.row_factory = sqlite3.Row
@@ -687,7 +687,7 @@ if __name__ == "__main__":
 		"library": cmd_library,
 		"list": cmd_list,
 		"path": cmd_path,
-		"profile": cmd_profile,
+		"config": cmd_config,
 		"run": cmd_run
 	}
 	
