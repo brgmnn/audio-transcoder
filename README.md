@@ -10,6 +10,9 @@ Batch transcode audio files. Some features:
 ## Installation ##
 
 Clone this git repo to your computer.
+
+#### Optional step 2 ####
+
 Then if you want to install the transcoder to your /usr/local/bin folder, execute the install script from the repo folder:
 
 	sudo ./install.sh
