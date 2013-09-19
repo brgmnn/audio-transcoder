@@ -647,8 +647,8 @@ if __name__ == "__main__":
 	p_config.add_argument("--new-db",
 		action="store_true",
 		dest="newdb",
-		help="Creates a new blank config. A config contains all libraries, paths and settings \
-			for the application.")
+		help="Creates a new database profile. The database profile contains all libraries, paths \
+			and settings for the application.")
 
 	# run operations
 	p_run = subparsers.add_parser("run", help="Run the transcoder.")
