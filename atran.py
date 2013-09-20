@@ -554,7 +554,7 @@ if __name__ == "__main__":
 		type=str,
 		dest="paths",
 		metavar="LIBRARY",
-		help="Lists the paths being watched under a specified library.")
+		help="Lists the paths associated with the named library.")
 
 	# library - configure libraries
 	p_library = subparsers.add_parser("library", help="Configure libraries.")
@@ -563,46 +563,52 @@ if __name__ == "__main__":
 		nargs=3,
 		type=str,
 		dest="new",
-		metavar=("NAME", "SOURCE", "DESTINATION"),
+		metavar=("LIBRARY", "SOURCE", "DESTINATION"),
 		help="Creates a new library with source and destination root paths.")
 	p_library.add_argument("--delete", "-d",
 		type=str,
 		dest="delete",
-		metavar="NAME",
+		metavar="LIBRARY",
 		help="Delete a library and its associated paths.")
 	p_library.add_argument("--script-path", "-sp",
 		nargs=2,
 		type=str,
 		dest="script",
 		metavar=("LIBRARY", "PATH"),
-		help="Set the transcoding script path for a library.")
+		help="Set the script path for a library.")
 	p_library.add_argument("--source-ext", "-se",
 		nargs=2,
 		type=str,
 		dest="source_ext",
 		metavar=("LIBRARY", "EXTENSION"),
-		help="Set the source file extension. This should include the preceeding period. Example: for FLAC source audio files, set this extension to '.flac'")
+		help="Set the source file extension for a library. This should include the preceeding \
+			period. Example: for FLAC source audio files, set this extension to '.flac'")
 	p_library.add_argument("--target-ext", "-te",
 		nargs=2,
 		type=str,
 		dest="target_ext",
 		metavar=("LIBRARY", "EXTENSION"),
-		help="Set the target output file extension. This should include the preceeding period. Example: for MP3 output files, set this extension to '.mp3'")
+		help="Set the target output file extension for a library. This should include the \
+			preceeding period. Example: for MP3 output files, set this extension to '.mp3'")
 	p_library.add_argument("--add-copy-ext", "-ace",
 		nargs=2,
 		type=str,
 		dest="add_copy",
 		metavar=("LIBRARY", "EXTENSION(S)"),
-		help="Add copy extensions. Multiple extensions can be specified, separated by a comma. Copy extensions are a list of file extensions which files are to be copied over from the source to target tree. This could be used to copy image files so that album art is transfered over to the target directory.")
+		help="Add copy extensions to a library. Multiple extensions can be specified, separated by \
+			a comma. Copy extensions are a list of file extensions which files are to be copied \
+			over from the source to target tree. This could be used to copy image files so that \
+			album art is transfered over to the target directory.")
 	p_library.add_argument("--clear-copy-ext", "-cce",
 		type=str,
 		dest="clear_copy",
 		metavar="LIBRARY",
-		help="Clears the copy extension list for a library. After calling this command no files will be copied over from the source to target tree.")
+		help="Clears the copy extension list for a library. After calling this command no files \
+			will be copied over from the source to target tree.")
 	p_library.add_argument("--export", "-e",
 		type=str,
 		dest="export",
-		metavar="NAME",
+		metavar="LIBRARY",
 		help="Export a library to JSON format.")
 	p_library.add_argument("--import", "-i",
 		action="store_true",
@@ -617,17 +623,20 @@ if __name__ == "__main__":
 		type=str,
 		dest="add",
 		metavar=("LIBRARY", "PATH"),
-		help="Adds a path to a library. Fails if the path given is not inside the libraries target path.")
+		help="Adds a path to a library. Fails if the path given is not inside the libraries target \
+			path.")
 	p_path.add_argument("--import", "-i",
 		type=str,
 		dest="import_paths",
 		metavar="LIBRARY",
-		help="Imports multiple paths to the specified library. Paths are read from the standard input stream with one path per line.")
+		help="Imports multiple paths to a library. Paths are read from the standard input stream \
+			with one path per line.")
 	p_path.add_argument("--export", "-e",
 		type=str,
 		dest="export",
 		metavar="LIBRARY",
-		help="Exports the paths for the given library to a plaintext format which can then be read in again using 'path --import'.")
+		help="Exports the paths for a library to a plaintext format which can then be read in \
+			again using 'path --import'.")
 	p_path.add_argument("--remove", "-r",
 		nargs=2,
 		type=str,
@@ -656,7 +665,8 @@ if __name__ == "__main__":
 	p_run.add_argument("--force", "-f",
 		action="store_true",
 		dest="force",
-		help="Force all scanned files to be processed even if there is already a target file for it.")
+		help="Force all scanned files to be processed even if there is already a target file for \
+			it.")
 	p_run.add_argument("todo",
 		nargs="*",
 		type=str,
