@@ -10,6 +10,9 @@ Batch transcode audio files. Some features:
 ## Installation ##
 
 Clone this git repo to your computer.
+You can do this by executing the following git command in the folder where you want the repo to be cloned:
+
+	git clone https://github.com/daniel-bergmann/audio-transcoder.git
 
 #### Optional step 2 ####
 
