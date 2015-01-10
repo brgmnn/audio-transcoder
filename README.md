@@ -12,7 +12,7 @@ Batch transcode audio files. Some features:
 Clone this git repo to your computer.
 You can do this by executing the following git command in the folder where you want the repo to be cloned:
 
-	git clone https://github.com/daniel-bergmann/audio-transcoder.git
+	git clone https://github.com/brgmnn/audio-transcoder.git
 
 #### Optional step 2 ####
 
@@ -26,7 +26,9 @@ You can now call the transcoder from any folder with `atran`.
 #### Requirements ####
 
 * Python 2.7.
-* Bash or similar.
+* Sqlite
+* Some kind of audio conversion tool. For the encoder scripts provided you
+    need `lame` for MP3 and `oggenc` for OGG Vorbis.
 
 I develop/test primarily on Ubuntu/Linux Mint.
 Atran should run on most Unix like OS's.
@@ -39,7 +41,7 @@ Delete the repo folder you have cloned and delete the link in /usr/local/bin if 
 
 ## Quick start, or "I just want to transcode my files!" ##
 
-First prepare your [script file](http://github.com/daniel-bergmann/audio-transcoder/wiki/scripts), or just modify the default one provided.
+First prepare your [script file](http://github.com/brgmnn/audio-transcoder/wiki/scripts), or just modify the default one provided.
 Your script file will be called on each file to be transcoded individually and will be called with `./your-script.sh [source_file] [output_file]`.
 Here is the contents of the default script file:
 
@@ -51,7 +53,7 @@ This script encodes `$1` using the lame mp3 encoder with variable bitrate qualit
 You will need lame installed to use this default script.
 If you are not sure about how your script file should look like, there are several example scripts provided in the `encoders` folder.
 
-Next modify [settings.json](http://github.com/daniel-bergmann/audio-transcoder/wiki/settings.json) to set the source file extension and output file extension as well as the location of your script file.
+Next modify [settings.json](http://github.com/brgmnn/audio-transcoder/wiki/settings.json) to set the source file extension and output file extension as well as the location of your script file.
 If you want to transcode _.wav_ files to _.mp3_ files then edit settings.json to look like:
 
 	{
@@ -71,7 +73,7 @@ That's it! As the transcoder runs it will print out the files it has finished.
 The transcoder will scan through the source folder and will transcode all files that it finds with the source file extension.
 The output files will be placed in the same relative paths as they are under the source folder with the same name but with the output file extension.
 
-More information on [settings.json](http://github.com/daniel-bergmann/audio-transcoder/wiki/settings.json)
+More information on [settings.json](http://github.com/brgmnn/audio-transcoder/wiki/settings.json)
 
 ## Library Model ##
 
@@ -126,27 +128,4 @@ That's it! A list of all the files being transcoded will appear as they are comp
 ## More Examples and the wiki ##
 
 There are more examples and a list of all the functions available with the transcoder in the wiki.
-
-## License ##
-
-The MIT License (MIT)
-
-Copyright (c) 2013 Daniel Bergmann
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of
-this software and associated documentation files (the "Software"), to deal in
-the Software without restriction, including without limitation the rights to
-use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software is furnished to do so,
-subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
