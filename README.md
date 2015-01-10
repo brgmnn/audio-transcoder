@@ -31,9 +31,7 @@ You can now call the transcoder from any folder with `atran`.
     need `lame` for MP3 and `oggenc` for OGG Vorbis.
 
 I develop/test primarily on Ubuntu/Linux Mint.
-Atran should run on most Unix like OS's.
-Atran is _not_ tested on Windows!
-However it does run in Cygwin.
+Atran is _not_ tested on Windows however it does run in Cygwin.
 
 #### Uninstallation ####
 
